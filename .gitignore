@@ -1,0 +1,31 @@
+# Node 
+node_modules/
+dist/
+build/
+
+# React
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+
+# Java / Spring Boot
+backend/target/
+backend/.idea/
+backend/.mvn/
+*.class
+*.log
+
+# IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+application-local.properties

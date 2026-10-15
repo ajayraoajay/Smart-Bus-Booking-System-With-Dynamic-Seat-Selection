@@ -1,0 +1,91 @@
+.tdm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.tdm-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  max-height: calc(100vh - 2rem);
+}
+
+.tdm-scroll {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.tdm-card {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.tdm-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1d4ed8;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.tdm-close:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  transform: scale(1.03);
+}
+
+.tdm-status-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #16a34a;
+}
+
+.tdm-status-circle.cancelled {
+  background: #dc2626;
+}
+
+.tdm-actions .bsp-home-btn {
+  flex: 1 1 160px;
+}
+
+@media (max-width: 640px) {
+  .tdm-overlay {
+    padding: 0.75rem;
+  }
+
+  .tdm-dialog,
+  .tdm-scroll {
+    max-height: calc(100vh - 1.5rem);
+  }
+
+  .tdm-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+}

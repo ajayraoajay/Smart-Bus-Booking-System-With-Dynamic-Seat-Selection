@@ -1,0 +1,124 @@
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.confirm-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 2.25rem 2rem 1.75rem;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+.confirm-modal-icon {
+  font-size: 2.7rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.confirm-modal-title {
+  margin: 0;
+  color: #111827;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.confirm-modal-message {
+  margin: 1rem 0 0;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.confirm-modal-note {
+  margin: 0.65rem 0 0;
+  color: #64748b;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.confirm-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.7rem;
+}
+
+.confirm-modal-cancel,
+.confirm-modal-confirm {
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  font-family: inherit;
+}
+
+.confirm-modal-cancel {
+  background: #ffffff;
+  border: 1px solid #d7dde7;
+  color: #334155;
+}
+
+.confirm-modal-cancel:hover:not(:disabled) {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.confirm-modal-confirm {
+  border: none;
+  color: #ffffff;
+}
+
+.confirm-modal-confirm-danger {
+  background: #ef2b2d;
+}
+
+.confirm-modal-confirm-danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.confirm-modal-confirm-primary {
+  background: #2563eb;
+}
+
+.confirm-modal-confirm-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.confirm-modal-cancel:disabled,
+.confirm-modal-confirm:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 520px) {
+  .confirm-modal {
+    max-width: 100%;
+    padding: 2rem 1.25rem 1.35rem;
+  }
+
+  .confirm-modal-title {
+    font-size: 1.6rem;
+  }
+
+  .confirm-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}

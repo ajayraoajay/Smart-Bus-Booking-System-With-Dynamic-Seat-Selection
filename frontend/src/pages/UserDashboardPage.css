@@ -1,0 +1,629 @@
+
+.udp-page {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+
+.udp-header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 2rem;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.udp-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.udp-logo-icon { width: 36px; height: 36px; }
+.udp-logo-icon svg { width: 100%; height: 100%; }
+
+.udp-logo-text {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+
+.udp-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.udp-nav button {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.udp-nav button:hover { color: #2563eb; }
+.udp-nav-active { color: #2563eb !important; font-weight: 700 !important; }
+
+
+.udp-profile-wrap {
+  position: relative;
+}
+
+.udp-profile-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s;
+}
+
+.udp-profile-btn:hover { color: #2563eb; }
+
+.udp-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 200;
+}
+
+.udp-dropdown button {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0.75rem 1.1rem;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.udp-dropdown button:hover { background: #f9fafb; color: #2563eb; }
+
+
+.udp-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.udp-buy-btn {
+  background: #2563eb;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.udp-buy-btn:hover { background: #1d4ed8; }
+
+.udp-user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.udp-logout-btn {
+  background: white;
+  border: 1.5px solid #dc2626;
+  color: #dc2626;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.udp-logout-btn:hover { background: #fef2f2; }
+
+
+.udp-hero {
+  background: linear-gradient(135deg, #0f2d7a 0%, #1a3fa3 40%, #1e50c8 70%, #2563eb 100%);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.udp-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+
+.udp-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+
+.udp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.udp-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border-left: 5px solid transparent;
+}
+
+.udp-stat-green { border-left-color: #16a34a; }
+.udp-stat-red   { border-left-color: #dc2626; }
+.udp-stat-yellow{ border-left-color: #d97706; }
+
+.udp-stat-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+}
+
+.udp-stat-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.udp-stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.udp-icon-green  { background: #16a34a; }
+.udp-icon-red    { background: #dc2626; }
+.udp-icon-yellow { background: #d97706; }
+
+
+.udp-table-wrap {
+  overflow-x: auto;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.udp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.udp-table thead { background: #2563eb; }
+
+.udp-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+
+.udp-table td {
+  padding: 0.9rem 1rem;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  white-space: nowrap;
+}
+
+.udp-table tbody tr:last-child td { border-bottom: none; }
+.udp-table tbody tr:hover { background: #f9fafb; }
+
+.udp-empty-cell {
+  text-align: center;
+  padding: 3rem !important;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
+
+
+.udp-ref {
+  font-family: monospace;
+  font-size: 0.82rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.udp-seat {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.udp-status {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.udp-status-booked    { background: #dcfce7; color: #16a34a; }
+.udp-status-reserved  { background: #fef9c3; color: #ca8a04; }
+.udp-status-cancelled { background: #fee2e2; color: #dc2626; }
+
+.udp-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.udp-btn-view {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+.udp-btn-view:hover {
+  background: #dbeafe;
+}
+
+.udp-btn-cancel {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+.udp-btn-cancel:hover {
+  background: #fecaca;
+}
+
+.udp-action-note {
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+
+.udp-loading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem;
+  color: #6b7280;
+  justify-content: center;
+}
+
+.udp-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: udpSpin 0.7s linear infinite;
+}
+
+@keyframes udpSpin { to { transform: rotate(360deg); } }
+
+.udp-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.udp-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #15803d;
+  border-radius: 10px;
+  padding: 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+
+@media (max-width: 900px) {
+  .udp-stats { grid-template-columns: 1fr; }
+  .udp-nav { display: none; }
+}
+
+
+.udp-theme-toggle {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.udp-theme-toggle:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+
+.udp-dark {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+.udp-dark .udp-header {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.udp-dark .udp-logo-text { color: #93c5fd; }
+
+.udp-dark .udp-nav button { color: #94a3b8; }
+.udp-dark .udp-nav button:hover,
+.udp-dark .udp-nav-active { color: #60a5fa !important; }
+
+.udp-dark .udp-profile-btn { color: #94a3b8; }
+
+.udp-dark .udp-dropdown {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.udp-dark .udp-dropdown button { color: #e2e8f0; }
+.udp-dark .udp-dropdown button:hover { background: #273549; color: #60a5fa; }
+
+.udp-dark .udp-user-info { color: #94a3b8; }
+
+.udp-dark .udp-logout-btn {
+  background: transparent;
+  border-color: #dc2626;
+  color: #f87171;
+}
+
+.udp-dark .udp-theme-toggle {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+.udp-dark .udp-theme-toggle:hover {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.udp-dark .udp-stat-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.udp-dark .udp-stat-label { color: #94a3b8; }
+.udp-dark .udp-stat-value { color: #f1f5f9; }
+
+.udp-dark .udp-table-wrap {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.udp-dark .udp-table thead { background: #1d4ed8; }
+
+.udp-dark .udp-table td {
+  color: #e2e8f0;
+  border-color: #273549;
+}
+
+.udp-dark .udp-table tbody tr:hover { background: #273549; }
+
+.udp-dark .udp-ref {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+.udp-dark .udp-seat {
+  background: #273549;
+  color: #e2e8f0;
+}
+
+.udp-dark .udp-btn-cancel {
+  background: rgba(220, 38, 38, 0.16);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+}
+
+.udp-dark .udp-btn-cancel:hover {
+  background: rgba(220, 38, 38, 0.24);
+}
+
+.udp-dark .udp-btn-view {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+}
+
+.udp-dark .udp-btn-view:hover {
+  background: rgba(37, 99, 235, 0.28);
+}
+
+.udp-dark .udp-action-note {
+  color: #cbd5e1;
+}
+
+.udp-dark .udp-success {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(74, 222, 128, 0.35);
+  color: #86efac;
+}
+
+
+.udp-refresh-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.udp-refresh-btn {
+  background: white;
+  border: 1.5px solid #2563eb;
+  color: #2563eb;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+}
+
+.udp-refresh-btn:hover {
+  background: #2563eb;
+  color: white;
+}
+
+
+.udp-dark .udp-hero {
+  background: linear-gradient(135deg, #0a1929 0%, #0f2d7a 100%);
+}
+
+.udp-dark .udp-refresh-btn {
+  background: #1e293b;
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.udp-dark .udp-refresh-btn:hover {
+  background: #2563eb;
+  color: white;
+}
+
+
+.udp-status-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.udp-status-confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+
+.udp-bus-num {
+  font-family: monospace;
+  font-size: 0.82rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.udp-ac-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.udp-ac-yes {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.udp-ac-no {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+
+[data-theme="dark"] .udp-bus-num {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .udp-ac-yes {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border-color: #2563eb;
+}
+
+[data-theme="dark"] .udp-ac-no {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
