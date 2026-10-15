@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 public class AdminDataInitializer {
 
     private static final String ADMIN_NAME = "BusGo Admin";
-    private static final String ADMIN_EMAIL = "busgoadmin12@gmail.com";
-    private static final String ADMIN_PASSWORD = "Busgo888@";
+    private static final String ADMIN_EMAIL = "admin@gmail.com";
+    private static final String ADMIN_PASSWORD = "Admin@123";
 
     @Bean
     CommandLineRunner seedAdminUser(UserRepository userRepository) {
