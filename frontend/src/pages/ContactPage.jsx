@@ -142,8 +142,8 @@ export default function ContactPage() {
 
   const faqs = [
     { q: "How do I book a bus ticket?", a: "Simply select your route, date, choose your seat, and complete the booking with passenger details." },
-    { q: "Can I cancel my booking?", a: "Yes, you can cancel your booking by contacting our support team." },
-    { q: "How do I make payments for bookings?", a: "First, you need to make the advance payment online. The remaining balance must be paid at the bus." },
+    { q: "Can I cancel my booking?", a: "You can cancel ticket any time before departure time of your bus by clicking Cancel Ticket button in Bookings page." },
+    { q: "How do I make payments for bookings?", a: "You can make online payment using UPI, Net Banking, Debit and Credit cards." },
     { q: "How early should I arrive at the boarding point?", a: "We recommend arriving at least 15 minutes before the scheduled departure time." },
     { q: "Can I change my seat after booking?", a: "Seat changes are not allowed after confirmation. Please contact the admin for assistance." },
   ];

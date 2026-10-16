@@ -20,6 +20,8 @@ export default function Header() {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   };
 
+  const isLoginPage = location.pathname === "/login";
+
   return (
     <header className="header">
       
@@ -54,13 +56,13 @@ export default function Header() {
 
       
       <div className="header-actions">
-        {isAdmin && (
+        {!isLoginPage && isAdmin && (
           <button className="btn-admin" onClick={() => navigate("/admin/dashboard")}>
             🛡️ Admin Panel
           </button>
         )}
 
-        {isLoggedIn ? (
+        {!isLoginPage && isLoggedIn ? (
           <div className="header-user">
             {!isAdmin && (
               <button className="btn-dashboard" onClick={() => navigate("/user/dashboard")}>
@@ -79,14 +81,14 @@ export default function Header() {
               Logout
             </button>
           </div>
-        ) : (
+        ) : !isLoginPage ? (
           <button className="btn-outline" onClick={() => navigate("/login")}>
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
               <path d="M15 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H15M10 17L15 12L10 7M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Login / Sign Up
           </button>
-        )}
+        ) : null}
       </div>
 
       

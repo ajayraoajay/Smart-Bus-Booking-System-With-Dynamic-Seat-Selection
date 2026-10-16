@@ -610,3 +610,111 @@
   color: #6b7280;
   border: 1px solid #e5e7eb;
 }
+
+/* Route Form Validation & Errors */
+.adm-field-error {
+  color: #dc2626;
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.adm-input-error,
+.adm-field input.adm-input-error,
+.adm-field textarea.adm-input-error {
+  border-color: #dc2626 !important;
+}
+
+.adm-input-error:focus,
+.adm-field input.adm-input-error:focus,
+.adm-field textarea.adm-input-error:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+}
+
+/* Route Search Clear Button */
+.adm-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--text4);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.adm-search-clear:hover {
+  color: var(--text);
+}
+
+/* Route Table Pagination */
+.adm-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 0.75rem 0.25rem 0.25rem;
+  flex-wrap: wrap;
+}
+
+.adm-pagination-info {
+  font-size: 0.85rem;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+.adm-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.adm-page-btn {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.adm-page-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: var(--surface);
+}
+
+.adm-page-btn.active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.adm-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.adm-page-ellipsis {
+  padding: 0 0.35rem;
+  color: var(--text4);
+  font-size: 0.9rem;
+  user-select: none;
+}
+

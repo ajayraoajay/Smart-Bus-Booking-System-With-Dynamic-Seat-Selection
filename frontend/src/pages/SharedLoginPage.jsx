@@ -251,12 +251,13 @@ export default function SharedLoginPage() {
     await handleSendCode();
   };
 
-  const showSuccessAndNavigate = (path, navState) => {
+  const showSuccessAndNavigate = (path, navState, userData) => {
     setLoginToast(true);
     setTimeout(() => {
+      login(userData);
       setLoginToast(false);
-      navigate(path, { state: navState });
-    }, 1500);
+      navigate(path, { state: navState, replace: true });
+    }, 800);
   };
 
   const handleLogin = async (event) => {
@@ -312,8 +313,7 @@ export default function SharedLoginPage() {
         sessionStorage.removeItem("busgo_login_redirect_state");
       }
 
-      login(userData);
-      showSuccessAndNavigate(nextPath, isAdminRole ? undefined : savedState);
+      showSuccessAndNavigate(nextPath, isAdminRole ? undefined : savedState, userData);
     } catch (err) {
       setError(
         err.response?.data?.message ||

@@ -117,6 +117,17 @@ export default function AdminDashboardPage() {
   const [routeMsg, setRouteMsg] = useState("");
   const [routeErr, setRouteErr] = useState("");
   const [routeLoading, setRouteLoading] = useState(false);
+  const [routeFieldErrors, setRouteFieldErrors] = useState({});
+  const [routeSearchQuery, setRouteSearchQuery] = useState("");
+  const [routePage, setRoutePage] = useState(1);
+
+  useEffect(() => {
+    if (!routeMsg) return;
+    const timer = setTimeout(() => {
+      setRouteMsg("");
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [routeMsg]);
 
   
   const [deleteModal, setDeleteModal] = useState(null); 
@@ -346,7 +357,27 @@ export default function AdminDashboardPage() {
   };
 
   
-  const handleRouteChange = (e) => setRouteForm({ ...routeForm, [e.target.name]: e.target.value });
+  const handleRouteChange = (e) => {
+    const { name, value } = e.target;
+    setRouteForm((prev) => ({ ...prev, [name]: value }));
+    if (routeFieldErrors[name]) {
+      setRouteFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        if (name === "fromCity" && next.toCity === "From city and To city must be different.") {
+          delete next.toCity;
+        }
+        if (name === "toCity" && next.fromCity === "From city and To city must be different.") {
+          delete next.fromCity;
+        }
+        delete next.duplicate;
+        return next;
+      });
+    }
+    if (routeErr) {
+      setRouteErr("");
+    }
+  };
 
   const handleEditRoute = (r) => {
     setEditingRouteId(r.id);
@@ -356,33 +387,107 @@ export default function AdminDashboardPage() {
       boardingPointsText: formatPointTextarea(getRoutePointOptions(r, "boardingPoints")),
       droppingPointsText: formatPointTextarea(getRoutePointOptions(r, "droppingPoints")),
     });
-    setRouteMsg(""); setRouteErr("");
+    setRouteMsg("");
+    setRouteErr("");
+    setRouteFieldErrors({});
     document.getElementById("route-form-top")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleCancelRouteEdit = () => {
     setEditingRouteId(null);
     setRouteForm(createEmptyRouteForm());
-    setRouteMsg(""); setRouteErr("");
+    setRouteMsg("");
+    setRouteErr("");
+    setRouteFieldErrors({});
   };
 
   const handleSaveRoute = async (e) => {
     e.preventDefault();
-    setRouteErr(""); setRouteMsg("");
+    setRouteErr("");
+    setRouteMsg("");
 
+    const errors = {};
+    const fromTrimmed = routeForm.fromCity?.trim() || "";
+    const toTrimmed = routeForm.toCity?.trim() || "";
+    const boardingText = routeForm.boardingPointsText?.trim() || "";
+    const droppingText = routeForm.droppingPointsText?.trim() || "";
+
+    // 1. From City validation
+    if (!fromTrimmed) {
+      errors.fromCity = "From city is required.";
+    } else if (fromTrimmed.length < 2) {
+      errors.fromCity = "From city must be at least 2 characters long.";
+    } else if (!/^[a-zA-Z\s.-]+$/.test(fromTrimmed)) {
+      errors.fromCity = "From city can only contain letters, spaces, and hyphens.";
+    }
+
+    // 2. To City validation
+    if (!toTrimmed) {
+      errors.toCity = "To city is required.";
+    } else if (toTrimmed.length < 2) {
+      errors.toCity = "To city must be at least 2 characters long.";
+    } else if (!/^[a-zA-Z\s.-]+$/.test(toTrimmed)) {
+      errors.toCity = "To city can only contain letters, spaces, and hyphens.";
+    }
+
+    // 3. From City and To City must be different
+    if (fromTrimmed && toTrimmed && !errors.fromCity && !errors.toCity) {
+      if (fromTrimmed.toLowerCase() === toTrimmed.toLowerCase()) {
+        const diffMsg = "From city and To city must be different.";
+        errors.fromCity = diffMsg;
+        errors.toCity = diffMsg;
+      }
+    }
+
+    // 4. Duplicate route check
+    if (fromTrimmed && toTrimmed && !errors.fromCity && !errors.toCity) {
+      const routeAlreadyExists = routes.some(
+        (r) =>
+          (!editingRouteId || String(r.id) !== String(editingRouteId)) &&
+          r.fromCity?.trim().toLowerCase() === fromTrimmed.toLowerCase() &&
+          r.toCity?.trim().toLowerCase() === toTrimmed.toLowerCase()
+      );
+      if (routeAlreadyExists) {
+        errors.duplicate = `Route from "${fromTrimmed}" to "${toTrimmed}" already exists.`;
+      }
+    }
+
+    // 5. Boarding Points validation
     const boardingPoints = parsePointTextarea(routeForm.boardingPointsText);
-    const droppingPoints = parsePointTextarea(routeForm.droppingPointsText);
+    if (!boardingText || boardingPoints.length === 0) {
+      errors.boardingPointsText = "Please enter at least one boarding point.";
+    } else if (boardingPoints.some((p) => p.length < 2)) {
+      errors.boardingPointsText = "Each boarding point must be at least 2 characters long.";
+    }
 
-    if (!routeForm.fromCity || !routeForm.toCity || boardingPoints.length === 0 || droppingPoints.length === 0) {
-      setRouteErr("Please fill in all fields.");
+    // 6. Dropping Points validation
+    const droppingPoints = parsePointTextarea(routeForm.droppingPointsText);
+    if (!droppingText || droppingPoints.length === 0) {
+      errors.droppingPointsText = "Please enter at least one dropping point.";
+    } else if (droppingPoints.some((p) => p.length < 2)) {
+      errors.droppingPointsText = "Each dropping point must be at least 2 characters long.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setRouteFieldErrors(errors);
+      const primaryMsg =
+        errors.duplicate ||
+        errors.fromCity ||
+        errors.toCity ||
+        errors.boardingPointsText ||
+        errors.droppingPointsText ||
+        "Please correct the errors in the form.";
+      setRouteErr(primaryMsg);
+      document.getElementById("route-form-top")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
 
+    setRouteFieldErrors({});
     setRouteLoading(true);
     try {
       const payload = {
-        fromCity: routeForm.fromCity,
-        toCity: routeForm.toCity,
+        fromCity: fromTrimmed,
+        toCity: toTrimmed,
         boardingPoints,
         droppingPoints,
       };
@@ -404,6 +509,19 @@ export default function AdminDashboardPage() {
       setRouteLoading(false);
     }
   };
+
+  const ROUTES_PER_PAGE = 10;
+  const filteredRoutes = routes.filter((r) => {
+    const q = routeSearchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const from = (r.fromCity || "").toLowerCase();
+    const to = (r.toCity || "").toLowerCase();
+    return from.includes(q) || to.includes(q) || `${from} -> ${to}`.includes(q) || `${from} to ${to}`.includes(q);
+  });
+  const totalRoutePages = Math.max(1, Math.ceil(filteredRoutes.length / ROUTES_PER_PAGE));
+  const safeRoutePage = Math.min(routePage, totalRoutePages);
+  const routeStartIndex = (safeRoutePage - 1) * ROUTES_PER_PAGE;
+  const paginatedRoutes = filteredRoutes.slice(routeStartIndex, routeStartIndex + ROUTES_PER_PAGE);
 
   const handleDeleteRoute = async (id) => {
     try {
@@ -458,9 +576,17 @@ export default function AdminDashboardPage() {
           <div className="adm-stat-card">
             <div className="adm-stat-top">
               <span className="adm-stat-label">Total Revenue</span>
-              <span className="adm-stat-icon green adm-rs-icon">Rs.</span>
+              <span className="adm-stat-icon green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+                  <path d="M6 3h12" />
+                  <path d="M6 8h12" />
+                  <path d="m6 13 8.5 8" />
+                  <path d="M6 13h3" />
+                  <path d="M9 13c6.667 0 6.667-10 0-10" />
+                </svg>
+              </span>
             </div>
-            <p className="adm-stat-value green">Rs. {totalRevenue.toLocaleString()}</p>
+            <p className="adm-stat-value green">₹{totalRevenue.toLocaleString()}</p>
             <p className="adm-stat-meta">From {activeBookings.length} bookings</p>
           </div>
           <div className="adm-stat-card">
@@ -474,7 +600,13 @@ export default function AdminDashboardPage() {
           <div className="adm-stat-card">
             <div className="adm-stat-top">
               <span className="adm-stat-label">Active Routes</span>
-              <span className="adm-stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+              <span className="adm-stat-icon purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+                  <circle cx="6" cy="19" r="3" />
+                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+                  <circle cx="18" cy="5" r="3" />
+                </svg>
+              </span>
             </div>
             <p className="adm-stat-value purple">{routes.length}</p>
             <p className="adm-stat-meta">Available destinations</p>
@@ -751,11 +883,25 @@ export default function AdminDashboardPage() {
               <form onSubmit={handleSaveRoute} className="adm-form-grid">
                 <div className="adm-field">
                   <label>From City</label>
-                  <input name="fromCity" type="text" placeholder="e.g. Mumbai" value={routeForm.fromCity} onChange={handleRouteChange} />
+                  <input
+                    name="fromCity"
+                    type="text"
+                    placeholder="e.g. Mumbai"
+                    value={routeForm.fromCity}
+                    onChange={handleRouteChange}
+                    className={routeFieldErrors.fromCity ? "adm-input-error" : ""}
+                  />
                 </div>
                 <div className="adm-field">
                   <label>To City</label>
-                  <input name="toCity" type="text" placeholder="e.g. Bangalore" value={routeForm.toCity} onChange={handleRouteChange} />
+                  <input
+                    name="toCity"
+                    type="text"
+                    placeholder="e.g. Bangalore"
+                    value={routeForm.toCity}
+                    onChange={handleRouteChange}
+                    className={routeFieldErrors.toCity ? "adm-input-error" : ""}
+                  />
                 </div>
 
                 <div className="adm-field adm-field-full">
@@ -766,6 +912,7 @@ export default function AdminDashboardPage() {
                     value={routeForm.boardingPointsText}
                     onChange={handleRouteChange}
                     rows={4}
+                    className={routeFieldErrors.boardingPointsText ? "adm-input-error" : ""}
                   />
                 </div>
                 <div className="adm-field adm-field-full">
@@ -776,6 +923,7 @@ export default function AdminDashboardPage() {
                     value={routeForm.droppingPointsText}
                     onChange={handleRouteChange}
                     rows={4}
+                    className={routeFieldErrors.droppingPointsText ? "adm-input-error" : ""}
                   />
                 </div>
                 <div className="adm-field adm-field-full adm-form-actions">
@@ -789,28 +937,144 @@ export default function AdminDashboardPage() {
               </form>
             </div>
 
-            
-            <div className="adm-table-wrap">
-              <table className="adm-table">
-                <thead><tr><th>From</th><th>To</th><th>Boarding Points</th><th>Dropping Points</th><th>Actions</th></tr></thead>
-                <tbody>
-                  {routes.map(r => (
-                    <tr key={r.id}>
-                      <td>{r.fromCity}</td>
-                      <td>{r.toCity}</td>
-                      <td>{getRoutePointOptions(r, "boardingPoints").join(", ") || "—"}</td>
-                      <td>{getRoutePointOptions(r, "droppingPoints").join(", ") || "—"}</td>
-                      <td>
-                        <div className="adm-action-btns">
-                          <button className="adm-btn-edit" onClick={() => handleEditRoute(r)}>Edit</button>
-                          <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "route", id: r.id, label: `${r.fromCity} → ${r.toCity}` })}>Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Search Box on top of table */}
+            <div className="adm-search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search routes by from or to city..."
+                value={routeSearchQuery}
+                onChange={(e) => {
+                  setRouteSearchQuery(e.target.value);
+                  setRoutePage(1);
+                }}
+              />
+              {routeSearchQuery && (
+                <button
+                  type="button"
+                  className="adm-search-clear"
+                  onClick={() => {
+                    setRouteSearchQuery("");
+                    setRoutePage(1);
+                  }}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
+
+            {filteredRoutes.length === 0 ? (
+              <div className="adm-empty">
+                <div className="adm-empty-icon">🗺️</div>
+                <p>{routeSearchQuery ? `No routes found matching "${routeSearchQuery}".` : "No routes available."}</p>
+              </div>
+            ) : (
+              <>
+                <div className="adm-table-wrap">
+                  <table className="adm-table">
+                    <thead>
+                      <tr>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Boarding Points</th>
+                        <th>Dropping Points</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedRoutes.map((r) => (
+                        <tr key={r.id}>
+                          <td>{r.fromCity}</td>
+                          <td>{r.toCity}</td>
+                          <td>{getRoutePointOptions(r, "boardingPoints").join(", ") || "—"}</td>
+                          <td>{getRoutePointOptions(r, "droppingPoints").join(", ") || "—"}</td>
+                          <td>
+                            <div className="adm-action-btns">
+                              <button className="adm-btn-edit" onClick={() => handleEditRoute(r)}>
+                                Edit
+                              </button>
+                              <button
+                                className="adm-btn-delete"
+                                onClick={() =>
+                                  setDeleteModal({
+                                    type: "route",
+                                    id: r.id,
+                                    label: `${r.fromCity} → ${r.toCity}`,
+                                  })
+                                }
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination (10 rows per page) */}
+                <div className="adm-pagination">
+                  <div className="adm-pagination-info">
+                    Showing {filteredRoutes.length === 0 ? 0 : routeStartIndex + 1} to{" "}
+                    {Math.min(routeStartIndex + ROUTES_PER_PAGE, filteredRoutes.length)} of {filteredRoutes.length} routes
+                  </div>
+                  {totalRoutePages > 1 && (
+                    <div className="adm-pagination-controls">
+                      <button
+                        type="button"
+                        className="adm-page-btn"
+                        disabled={safeRoutePage <= 1}
+                        onClick={() => setRoutePage((p) => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </button>
+                      {Array.from({ length: totalRoutePages }, (_, i) => i + 1).map((p) => {
+                        if (
+                          totalRoutePages <= 7 ||
+                          p === 1 ||
+                          p === totalRoutePages ||
+                          Math.abs(p - safeRoutePage) <= 1
+                        ) {
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              className={`adm-page-btn ${safeRoutePage === p ? "active" : ""}`}
+                              onClick={() => setRoutePage(p)}
+                            >
+                              {p}
+                            </button>
+                          );
+                        } else if (
+                          p === safeRoutePage - 2 ||
+                          p === safeRoutePage + 2
+                        ) {
+                          return (
+                            <span key={p} className="adm-page-ellipsis">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                      <button
+                        type="button"
+                        className="adm-page-btn"
+                        disabled={safeRoutePage >= totalRoutePages}
+                        onClick={() => setRoutePage((p) => Math.min(totalRoutePages, p + 1))}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
