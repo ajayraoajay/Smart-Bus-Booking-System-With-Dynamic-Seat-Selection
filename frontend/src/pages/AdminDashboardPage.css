@@ -66,7 +66,7 @@
 
 .adm-back-btn:hover { background: var(--surface2); }
 
-.adm-user-badge {
+.adm-change-pw-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -77,6 +77,21 @@
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text2);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  font-family: inherit;
+}
+
+.adm-change-pw-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+[data-theme="dark"] .adm-change-pw-btn:hover {
+  border-color: #60a5fa;
+  color: #60a5fa;
+  background: #1e293b;
 }
 
 .adm-logout-btn {
@@ -420,7 +435,7 @@
 
 .adm-form-error {
   background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
-  border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.85rem; margin-bottom: 1rem;
+  border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.88rem; font-weight: 500; margin-bottom: 1rem;
 }
 .adm-form-success {
   background: #f0fdf4; border: 1px solid #86efac; color: #16a34a;
@@ -617,19 +632,6 @@
   font-size: 0.78rem;
   font-weight: 500;
   margin-top: 2px;
-}
-
-.adm-input-error,
-.adm-field input.adm-input-error,
-.adm-field textarea.adm-input-error {
-  border-color: #dc2626 !important;
-}
-
-.adm-input-error:focus,
-.adm-field input.adm-input-error:focus,
-.adm-field textarea.adm-input-error:focus {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
 }
 
 /* Route Search Clear Button */

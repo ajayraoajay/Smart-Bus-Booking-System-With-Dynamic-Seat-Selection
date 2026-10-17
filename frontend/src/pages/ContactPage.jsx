@@ -11,6 +11,33 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
+  const handleFieldValidationSatisfied = (name, val, currentError) => {
+    if (!currentError) return false;
+    const trimmed = (val || "").trim();
+    if (name === "name") {
+      if (currentError === "Full name is required.") return trimmed.length > 0;
+      if (currentError === "Full name must be at least 2 characters.") return trimmed.length >= 2;
+      if (currentError === "Full name can only contain letters and spaces.") return trimmed.length > 0 && /^[a-zA-Z\s.'-]+$/.test(trimmed);
+    }
+    if (name === "email") {
+      if (currentError === "Email address is required.") return trimmed.length > 0;
+      if (currentError === "Please enter a valid email address.") return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
+    }
+    if (name === "phone") {
+      if (currentError === "Phone number is required.") return trimmed.length > 0;
+      if (currentError === "Phone number must be exactly 10 digits.") return /^\d{10}$/.test(trimmed);
+    }
+    if (name === "subject") {
+      if (currentError === "Subject is required.") return trimmed.length > 0;
+      if (currentError === "Subject must be at least 3 characters.") return trimmed.length >= 3;
+    }
+    if (name === "message") {
+      if (currentError === "Message is required.") return trimmed.length > 0;
+      if (currentError === "Message must be at least 10 characters.") return trimmed.length >= 10;
+    }
+    return false;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "phone") {
@@ -19,7 +46,9 @@ export default function ContactPage() {
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: "" }));
       }
-      if (formError) setFormError("");
+      if (formError && handleFieldValidationSatisfied(name, numericValue, formError)) {
+        setFormError("");
+      }
       return;
     }
 
@@ -27,7 +56,9 @@ export default function ContactPage() {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    if (formError) setFormError("");
+    if (formError && handleFieldValidationSatisfied(name, value, formError)) {
+      setFormError("");
+    }
   };
 
   const validateForm = () => {
@@ -76,10 +107,11 @@ export default function ContactPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
+    const errorKeys = Object.keys(validationErrors);
+    if (errorKeys.length > 0) {
       setErrors(validationErrors);
-      setFormError("Please fill out all required fields correctly.");
-      const firstField = Object.keys(validationErrors)[0];
+      setFormError(validationErrors[errorKeys[0]]);
+      const firstField = errorKeys[0];
       const el = document.querySelector(`[name="${firstField}"]`);
       if (el) el.focus();
       return;
@@ -216,18 +248,13 @@ export default function ContactPage() {
               <h2>Send Us a Message</h2>
               {formError && (
                 <div className="cp-form-error" role="alert">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  <span>{formError}</span>
+                  <span>⚠️ {formError}</span>
                 </div>
               )}
               <form onSubmit={handleSubmit} className="cp-form" noValidate>
                 <div className="cp-form-row">
-                  <div className={`cp-field ${errors.name ? "has-error" : ""}`}>
-                    <label htmlFor="cp-name">Full Name <span className="cp-req">*</span></label>
+                  <div className="cp-field">
+                    <label htmlFor="cp-name">Full Name</label>
                     <input
                       id="cp-name"
                       name="name"
@@ -236,10 +263,9 @@ export default function ContactPage() {
                       value={form.name}
                       onChange={handleChange}
                     />
-                    {errors.name && <span className="cp-error-msg">{errors.name}</span>}
                   </div>
-                  <div className={`cp-field ${errors.email ? "has-error" : ""}`}>
-                    <label htmlFor="cp-email">Email Address <span className="cp-req">*</span></label>
+                  <div className="cp-field">
+                    <label htmlFor="cp-email">Email Address</label>
                     <input
                       id="cp-email"
                       name="email"
@@ -248,12 +274,11 @@ export default function ContactPage() {
                       value={form.email}
                       onChange={handleChange}
                     />
-                    {errors.email && <span className="cp-error-msg">{errors.email}</span>}
                   </div>
                 </div>
                 <div className="cp-form-row">
-                  <div className={`cp-field ${errors.phone ? "has-error" : ""}`}>
-                    <label htmlFor="cp-phone">Phone Number <span className="cp-req">*</span></label>
+                  <div className="cp-field">
+                    <label htmlFor="cp-phone">Phone Number</label>
                     <input
                       id="cp-phone"
                       name="phone"
@@ -264,10 +289,9 @@ export default function ContactPage() {
                       value={form.phone}
                       onChange={handleChange}
                     />
-                    {errors.phone && <span className="cp-error-msg">{errors.phone}</span>}
                   </div>
-                  <div className={`cp-field ${errors.subject ? "has-error" : ""}`}>
-                    <label htmlFor="cp-subject">Subject <span className="cp-req">*</span></label>
+                  <div className="cp-field">
+                    <label htmlFor="cp-subject">Subject</label>
                     <input
                       id="cp-subject"
                       name="subject"
@@ -276,11 +300,10 @@ export default function ContactPage() {
                       value={form.subject}
                       onChange={handleChange}
                     />
-                    {errors.subject && <span className="cp-error-msg">{errors.subject}</span>}
                   </div>
                 </div>
-                <div className={`cp-field ${errors.message ? "has-error" : ""}`}>
-                  <label htmlFor="cp-message">Message <span className="cp-req">*</span></label>
+                <div className="cp-field">
+                  <label htmlFor="cp-message">Message</label>
                   <textarea
                     id="cp-message"
                     name="message"
@@ -289,7 +312,6 @@ export default function ContactPage() {
                     value={form.message}
                     onChange={handleChange}
                   />
-                  {errors.message && <span className="cp-error-msg">{errors.message}</span>}
                 </div>
                 <button type="submit" className="cp-submit-btn" disabled={loading}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>

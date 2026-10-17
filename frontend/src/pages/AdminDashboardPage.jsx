@@ -360,6 +360,56 @@ export default function AdminDashboardPage() {
   const handleRouteChange = (e) => {
     const { name, value } = e.target;
     setRouteForm((prev) => ({ ...prev, [name]: value }));
+
+    const updatedForm = { ...routeForm, [name]: value };
+    const fromTrimmed = updatedForm.fromCity?.trim() || "";
+    const toTrimmed = updatedForm.toCity?.trim() || "";
+    const boardingPoints = parsePointTextarea(updatedForm.boardingPointsText);
+    const droppingPoints = parsePointTextarea(updatedForm.droppingPointsText);
+
+    if (routeErr) {
+      let satisfied = false;
+      if (name === "fromCity") {
+        if (routeErr === "From city is required." && fromTrimmed) satisfied = true;
+        else if (routeErr === "From city must be at least 2 characters long." && fromTrimmed.length >= 2) satisfied = true;
+        else if (routeErr === "From city can only contain letters, spaces, and hyphens." && /^[a-zA-Z\s.-]+$/.test(fromTrimmed)) satisfied = true;
+        else if (routeErr === "From city and To city must be different." && fromTrimmed && toTrimmed && fromTrimmed.toLowerCase() !== toTrimmed.toLowerCase()) satisfied = true;
+        else if (routeErr.includes("already exists")) {
+          const routeAlreadyExists = routes.some(
+            (r) =>
+              (!editingRouteId || String(r.id) !== String(editingRouteId)) &&
+              r.fromCity?.trim().toLowerCase() === fromTrimmed.toLowerCase() &&
+              r.toCity?.trim().toLowerCase() === toTrimmed.toLowerCase()
+          );
+          if (!routeAlreadyExists) satisfied = true;
+        }
+      } else if (name === "toCity") {
+        if (routeErr === "To city is required." && toTrimmed) satisfied = true;
+        else if (routeErr === "To city must be at least 2 characters long." && toTrimmed.length >= 2) satisfied = true;
+        else if (routeErr === "To city can only contain letters, spaces, and hyphens." && /^[a-zA-Z\s.-]+$/.test(toTrimmed)) satisfied = true;
+        else if (routeErr === "From city and To city must be different." && fromTrimmed && toTrimmed && fromTrimmed.toLowerCase() !== toTrimmed.toLowerCase()) satisfied = true;
+        else if (routeErr.includes("already exists")) {
+          const routeAlreadyExists = routes.some(
+            (r) =>
+              (!editingRouteId || String(r.id) !== String(editingRouteId)) &&
+              r.fromCity?.trim().toLowerCase() === fromTrimmed.toLowerCase() &&
+              r.toCity?.trim().toLowerCase() === toTrimmed.toLowerCase()
+          );
+          if (!routeAlreadyExists) satisfied = true;
+        }
+      } else if (name === "boardingPointsText") {
+        if (routeErr === "Please enter at least one boarding point." && boardingPoints.length > 0) satisfied = true;
+        else if (routeErr === "Each boarding point must be at least 2 characters long." && boardingPoints.length > 0 && !boardingPoints.some((p) => p.length < 2)) satisfied = true;
+      } else if (name === "droppingPointsText") {
+        if (routeErr === "Please enter at least one dropping point." && droppingPoints.length > 0) satisfied = true;
+        else if (routeErr === "Each dropping point must be at least 2 characters long." && droppingPoints.length > 0 && !droppingPoints.some((p) => p.length < 2)) satisfied = true;
+      }
+
+      if (satisfied) {
+        setRouteErr("");
+      }
+    }
+
     if (routeFieldErrors[name]) {
       setRouteFieldErrors((prev) => {
         const next = { ...prev };
@@ -373,9 +423,6 @@ export default function AdminDashboardPage() {
         delete next.duplicate;
         return next;
       });
-    }
-    if (routeErr) {
-      setRouteErr("");
     }
   };
 
@@ -471,14 +518,33 @@ export default function AdminDashboardPage() {
     if (Object.keys(errors).length > 0) {
       setRouteFieldErrors(errors);
       const primaryMsg =
-        errors.duplicate ||
         errors.fromCity ||
         errors.toCity ||
+        errors.duplicate ||
         errors.boardingPointsText ||
         errors.droppingPointsText ||
         "Please correct the errors in the form.";
       setRouteErr(primaryMsg);
-      document.getElementById("route-form-top")?.scrollIntoView({ behavior: "smooth" });
+
+      let focusFieldName = null;
+      if (errors.fromCity) {
+        focusFieldName = "fromCity";
+      } else if (errors.toCity) {
+        focusFieldName = "toCity";
+      } else if (errors.duplicate) {
+        focusFieldName = "fromCity";
+      } else if (errors.boardingPointsText) {
+        focusFieldName = "boardingPointsText";
+      } else if (errors.droppingPointsText) {
+        focusFieldName = "droppingPointsText";
+      }
+
+      if (focusFieldName) {
+        const el = document.querySelector(`[name="${focusFieldName}"]`);
+        if (el) el.focus();
+      } else {
+        document.getElementById("route-form-top")?.scrollIntoView({ behavior: "smooth" });
+      }
       return;
     }
 
@@ -559,12 +625,13 @@ export default function AdminDashboardPage() {
             )}
             <span>{darkMode ? "Light" : "Dark"}</span>
           </button>
-          {user && (
-            <div className="adm-user-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>{user.name}</span>
-            </div>
-          )}
+          <button className="adm-change-pw-btn" onClick={() => navigate("/admin/change-password")}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>Change Password</span>
+          </button>
           <button className="adm-logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </div>
@@ -889,7 +956,6 @@ export default function AdminDashboardPage() {
                     placeholder="e.g. Mumbai"
                     value={routeForm.fromCity}
                     onChange={handleRouteChange}
-                    className={routeFieldErrors.fromCity ? "adm-input-error" : ""}
                   />
                 </div>
                 <div className="adm-field">
@@ -900,7 +966,6 @@ export default function AdminDashboardPage() {
                     placeholder="e.g. Bangalore"
                     value={routeForm.toCity}
                     onChange={handleRouteChange}
-                    className={routeFieldErrors.toCity ? "adm-input-error" : ""}
                   />
                 </div>
 
@@ -912,7 +977,6 @@ export default function AdminDashboardPage() {
                     value={routeForm.boardingPointsText}
                     onChange={handleRouteChange}
                     rows={4}
-                    className={routeFieldErrors.boardingPointsText ? "adm-input-error" : ""}
                   />
                 </div>
                 <div className="adm-field adm-field-full">
@@ -923,7 +987,6 @@ export default function AdminDashboardPage() {
                     value={routeForm.droppingPointsText}
                     onChange={handleRouteChange}
                     rows={4}
-                    className={routeFieldErrors.droppingPointsText ? "adm-input-error" : ""}
                   />
                 </div>
                 <div className="adm-field adm-field-full adm-form-actions">

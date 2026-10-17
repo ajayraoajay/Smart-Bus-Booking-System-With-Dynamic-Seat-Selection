@@ -127,6 +127,8 @@ function getPasswordErrors(password) {
   return errors;
 }
 
+const isFirefox = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent);
+
 export default function SharedLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -146,6 +148,7 @@ export default function SharedLoginPage() {
   const [regConfirm, setRegConfirm] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
   const [showRegConfirm, setShowRegConfirm] = useState(false);
+  const [regConfirmActive, setRegConfirmActive] = useState(false);
 
   const [fpEmail, setFpEmail] = useState("");
   const [fpCode, setFpCode] = useState("");
@@ -154,10 +157,25 @@ export default function SharedLoginPage() {
   const [showFpPw, setShowFpPw] = useState(false);
   const [showFpConfirmPw, setShowFpConfirmPw] = useState(false);
   const [resetCodeHint, setResetCodeHint] = useState("");
+  const [fpConfirmActive, setFpConfirmActive] = useState(false);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isRegPwAllOk =
+    regPassword.length >= 8 &&
+    /[0-9]/.test(regPassword) &&
+    /[^a-zA-Z0-9]/.test(regPassword) &&
+    /[A-Z]/.test(regPassword) &&
+    /[a-z]/.test(regPassword);
+
+  const isFpNewPwAllOk =
+    fpNewPw.length >= 8 &&
+    /[0-9]/.test(fpNewPw) &&
+    /[^a-zA-Z0-9]/.test(fpNewPw) &&
+    /[A-Z]/.test(fpNewPw) &&
+    /[a-z]/.test(fpNewPw);
 
   const getSavedRedirectState = () => {
     let savedState =
@@ -233,6 +251,8 @@ export default function SharedLoginPage() {
     setLoginPassword("");
     setRegPassword("");
     setRegConfirm("");
+    setRegConfirmActive(false);
+    setFpConfirmActive(false);
     setMode(nextMode);
   };
 
@@ -244,6 +264,7 @@ export default function SharedLoginPage() {
     setShowFpPw(false);
     setShowFpConfirmPw(false);
     setResetCodeHint("");
+    setFpConfirmActive(false);
   };
 
   const handleResendCode = async () => {
@@ -260,6 +281,119 @@ export default function SharedLoginPage() {
     }, 800);
   };
 
+  const handleLoginEmailChange = (val) => {
+    setLoginEmail(val);
+    const trimmed = val.trim();
+    if (error === "Please enter your email and password." && trimmed && loginPassword) {
+      setError("");
+    } else if (error === "Please enter your email address." && trimmed) {
+      setError("");
+    } else if (error === "Please enter a valid email address." && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
+      setError("");
+    }
+  };
+
+  const handleLoginPasswordChange = (val) => {
+    setLoginPassword(val);
+    if (error === "Please enter your email and password." && loginEmail.trim() && val) {
+      setError("");
+    } else if (error === "Please enter your password." && val) {
+      setError("");
+    }
+  };
+
+  const handleRegNameChange = (val) => {
+    setRegName(val);
+    const trimmed = val.trim();
+    if (error === "Please enter your full name." && trimmed) {
+      setError("");
+    } else if (error === "Full name must be at least 2 characters." && trimmed.length >= 2) {
+      setError("");
+    } else if (error === "Full name can only contain letters and spaces." && trimmed && /^[a-zA-Z\s.'-]+$/.test(trimmed)) {
+      setError("");
+    }
+  };
+
+  const handleRegEmailChange = (val) => {
+    setRegEmail(val);
+    const trimmed = val.trim();
+    if (error === "Please enter your email address." && trimmed) {
+      setError("");
+    } else if (error === "Please enter a valid email address." && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
+      setError("");
+    }
+  };
+
+  const handleRegPhoneChange = (val) => {
+    const numeric = val.replace(/\D/g, "").slice(0, 10);
+    setRegPhone(numeric);
+    if (error === "Please enter your phone number." && numeric) {
+      setError("");
+    } else if (error === "Phone number must be exactly 10 digits." && numeric.length === 10) {
+      setError("");
+    }
+  };
+
+  const handleRegPasswordChange = (val) => {
+    setRegPassword(val);
+    if (error === "Please create a password." && val) {
+      setError("");
+    } else if (error.startsWith("Password must include:") && getPasswordErrors(val).length === 0) {
+      setError("");
+    } else if (error === "Passwords do not match. Please re-enter." && regConfirm && val === regConfirm) {
+      setError("");
+    }
+  };
+
+  const handleRegConfirmChange = (val) => {
+    setRegConfirm(val);
+    if (error === "Please confirm your password." && val) {
+      setError("");
+    } else if (error === "Passwords do not match. Please re-enter." && val === regPassword) {
+      setError("");
+    }
+  };
+
+  const handleFpEmailChange = (val) => {
+    setFpEmail(val);
+    const trimmed = val.trim();
+    if (error === "Please enter your registered email address." && trimmed) {
+      setError("");
+    } else if (error === "Please enter a valid email address." && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
+      setError("");
+    }
+  };
+
+  const handleFpCodeChange = (val) => {
+    const numeric = val.replace(/\D/g, "").slice(0, 6);
+    setFpCode(numeric);
+    if (error === "Please enter the 6-digit verification code." && numeric) {
+      setError("");
+    } else if (error === "Verification code must be exactly 6 digits." && numeric.length === 6) {
+      setError("");
+    }
+  };
+
+  const handleFpNewPwChange = (val) => {
+    setFpNewPw(val);
+    if (error === "Please enter your new password." && val) {
+      setError("");
+    } else if (error.startsWith("Password must include:") && getPasswordErrors(val).length === 0) {
+      setError("");
+    } else if (error === "Passwords do not match. Please re-enter." && fpConfirmPw && val === fpConfirmPw) {
+      setError("");
+    }
+  };
+
+  const handleFpConfirmPwChange = (val) => {
+    setFpConfirmPw(val);
+    if (error === "Please confirm your new password." && val) {
+      setError("");
+    } else if (error === "Passwords do not match. Please re-enter." && val === fpNewPw) {
+      setError("");
+    }
+  };
+
   const handleLogin = async (event) => {
     event.preventDefault();
     clearMessages();
@@ -267,18 +401,22 @@ export default function SharedLoginPage() {
     const trimmedEmail = loginEmail.trim();
     if (!trimmedEmail && !loginPassword) {
       setError("Please enter your email and password.");
+      document.getElementById("login-email")?.focus();
       return;
     }
     if (!trimmedEmail) {
       setError("Please enter your email address.");
+      document.getElementById("login-email")?.focus();
       return;
     }
     if (!trimmedEmail.includes("@") || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)) {
       setError("Please enter a valid email address.");
+      document.getElementById("login-email")?.focus();
       return;
     }
     if (!loginPassword) {
       setError("Please enter your password.");
+      document.getElementById("login-password")?.focus();
       return;
     }
 
@@ -336,51 +474,62 @@ export default function SharedLoginPage() {
 
     if (!trimmedName) {
       setError("Please enter your full name.");
+      document.getElementById("reg-name")?.focus();
       return;
     }
     if (trimmedName.length < 2) {
       setError("Full name must be at least 2 characters.");
+      document.getElementById("reg-name")?.focus();
       return;
     }
     if (!/^[a-zA-Z\s.'-]+$/.test(trimmedName)) {
       setError("Full name can only contain letters and spaces.");
+      document.getElementById("reg-name")?.focus();
       return;
     }
 
     if (!trimmedEmail) {
       setError("Please enter your email address.");
+      document.getElementById("reg-email")?.focus();
       return;
     }
     if (!trimmedEmail.includes("@") || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)) {
       setError("Please enter a valid email address.");
+      document.getElementById("reg-email")?.focus();
       return;
     }
 
     if (!trimmedPhone) {
       setError("Please enter your phone number.");
+      document.getElementById("reg-phone")?.focus();
       return;
     }
     if (!/^\d{10}$/.test(trimmedPhone)) {
       setError("Phone number must be exactly 10 digits.");
+      document.getElementById("reg-phone")?.focus();
       return;
     }
 
     if (!regPassword) {
       setError("Please create a password.");
+      document.getElementById("reg-password")?.focus();
       return;
     }
     const passwordErrors = getPasswordErrors(regPassword);
     if (passwordErrors.length > 0) {
       setError(`Password must include: ${passwordErrors.join(", ")}.`);
+      document.getElementById("reg-password")?.focus();
       return;
     }
 
     if (!regConfirm) {
       setError("Please confirm your password.");
+      document.getElementById("reg-confirm")?.focus();
       return;
     }
     if (regPassword !== regConfirm) {
       setError("Passwords do not match. Please re-enter.");
+      document.getElementById("reg-confirm")?.focus();
       return;
     }
 
@@ -426,10 +575,12 @@ export default function SharedLoginPage() {
     const trimmedEmail = fpEmail.trim();
     if (!trimmedEmail) {
       setError("Please enter your registered email address.");
+      document.getElementById("fp-email")?.focus();
       return;
     }
     if (!trimmedEmail.includes("@") || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)) {
       setError("Please enter a valid email address.");
+      document.getElementById("fp-email")?.focus();
       return;
     }
 
@@ -467,10 +618,12 @@ export default function SharedLoginPage() {
     const trimmedCode = fpCode.trim();
     if (!trimmedCode) {
       setError("Please enter the 6-digit verification code.");
+      document.getElementById("fp-code")?.focus();
       return;
     }
     if (!/^\d{6}$/.test(trimmedCode)) {
       setError("Verification code must be exactly 6 digits.");
+      document.getElementById("fp-code")?.focus();
       return;
     }
 
@@ -499,22 +652,26 @@ export default function SharedLoginPage() {
 
     if (!fpNewPw) {
       setError("Please enter your new password.");
+      document.getElementById("fp-new-key")?.focus();
       return;
     }
 
     const passwordErrors = getPasswordErrors(fpNewPw);
     if (passwordErrors.length > 0) {
       setError(`Password must include: ${passwordErrors.join(", ")}.`);
+      document.getElementById("fp-new-key")?.focus();
       return;
     }
 
     if (!fpConfirmPw) {
       setError("Please confirm your new password.");
+      document.getElementById("fp-confirm-key")?.focus();
       return;
     }
 
     if (fpNewPw !== fpConfirmPw) {
-      setError("Passwords do not match. Please make sure both passwords match.");
+      setError("Passwords do not match. Please re-enter.");
+      document.getElementById("fp-confirm-key")?.focus();
       return;
     }
 
@@ -605,7 +762,7 @@ export default function SharedLoginPage() {
               <div className="auth-role-confirm">
                 Sign in once and BusGo will take you to the correct dashboard automatically.
               </div>
-              {error && <div className="auth-error">Warning: {error}</div>}
+              {error && <div className="auth-error">⚠️ {error}</div>}
               {success && <div className="auth-success">Success: {success}</div>}
               <form onSubmit={handleLogin} noValidate>
                 <div className="auth-field">
@@ -615,7 +772,7 @@ export default function SharedLoginPage() {
                     type="email"
                     placeholder="Enter your email"
                     value={loginEmail}
-                    onChange={(event) => setLoginEmail(event.target.value)}
+                    onChange={(event) => handleLoginEmailChange(event.target.value)}
                     onInvalid={(event) => event.preventDefault()}
                   />
                 </div>
@@ -627,7 +784,7 @@ export default function SharedLoginPage() {
                       type={showLoginPw ? "text" : "password"}
                       placeholder="Enter your password"
                       value={loginPassword}
-                      onChange={(event) => setLoginPassword(event.target.value)}
+                      onChange={(event) => handleLoginPasswordChange(event.target.value)}
                     />
                     <button type="button" className="pw-toggle" onClick={() => setShowLoginPw((current) => !current)}>
                       {showLoginPw ? <EyeOpen /> : <EyeClosed />}
@@ -662,7 +819,7 @@ export default function SharedLoginPage() {
                 </button>
                 <button className="auth-tab active">Register</button>
               </div>
-              {error && <div className="auth-error">Warning: {error}</div>}
+              {error && <div className="auth-error">⚠️ {error}</div>}
               {success && <div className="auth-success">Success: {success}</div>}
               <form onSubmit={handleRegister} noValidate>
                 <div className="auth-field">
@@ -672,7 +829,7 @@ export default function SharedLoginPage() {
                     type="text"
                     placeholder="John Perera"
                     value={regName}
-                    onChange={(event) => setRegName(event.target.value)}
+                    onChange={(event) => handleRegNameChange(event.target.value)}
                   />
                 </div>
                 <div className="auth-field">
@@ -682,7 +839,7 @@ export default function SharedLoginPage() {
                     type="email"
                     placeholder="Enter your email"
                     value={regEmail}
-                    onChange={(event) => setRegEmail(event.target.value)}
+                    onChange={(event) => handleRegEmailChange(event.target.value)}
                     onInvalid={(event) => event.preventDefault()}
                   />
                 </div>
@@ -695,7 +852,7 @@ export default function SharedLoginPage() {
                     placeholder="10-digit number"
                     maxLength={10}
                     value={regPhone}
-                    onChange={(event) => setRegPhone(event.target.value.replace(/\D/g, "").slice(0, 10))}
+                    onChange={(event) => handleRegPhoneChange(event.target.value)}
                   />
                 </div>
                 <div className="auth-field">
@@ -706,13 +863,14 @@ export default function SharedLoginPage() {
                       type={showRegPw ? "text" : "password"}
                       placeholder="Create a password (min 8 chars)"
                       value={regPassword}
-                      onChange={(event) => setRegPassword(event.target.value)}
+                      onChange={(event) => handleRegPasswordChange(event.target.value)}
+                      onFocus={() => setRegConfirmActive(false)}
                     />
                     <button type="button" className="pw-toggle" onClick={() => setShowRegPw((current) => !current)}>
                       {showRegPw ? <EyeOpen /> : <EyeClosed />}
                     </button>
                   </div>
-                  {regPassword && (
+                  {regPassword && !(regConfirmActive && isRegPwAllOk) && (
                     <div className="pw-requirements">
                       <span className={regPassword.length >= 8 ? "req-met" : "req-unmet"}>
                         {regPassword.length >= 8 ? "OK" : "NO"} At least 8 characters
@@ -740,7 +898,9 @@ export default function SharedLoginPage() {
                       type={showRegConfirm ? "text" : "password"}
                       placeholder="Confirm your password"
                       value={regConfirm}
-                      onChange={(event) => setRegConfirm(event.target.value)}
+                      onChange={(event) => handleRegConfirmChange(event.target.value)}
+                      onFocus={() => setRegConfirmActive(true)}
+                      onClick={() => setRegConfirmActive(true)}
                       className={regConfirm && regConfirm !== regPassword ? "input-mismatch" : ""}
                     />
                     <button
@@ -752,7 +912,7 @@ export default function SharedLoginPage() {
                     </button>
                   </div>
                   {regConfirm && regConfirm !== regPassword && (
-                    <span className="pw-mismatch-msg">Warning: your password doesn't match.</span>
+                    <span className="pw-mismatch-msg">⚠️ Passwords do not match.</span>
                   )}
                 </div>
                 <button className="auth-submit-btn" type="submit" disabled={loading}>
@@ -798,7 +958,7 @@ export default function SharedLoginPage() {
                   <span>3</span>
                 </div>
               </div>
-              {error && <div className="auth-error">Warning: {error}</div>}
+              {error && <div className="auth-error">⚠️ {error}</div>}
               {success && <div className="auth-success">Success: {success}</div>}
               <form onSubmit={handleSendCode} noValidate>
                 <div className="auth-field">
@@ -808,7 +968,7 @@ export default function SharedLoginPage() {
                     type="email"
                     placeholder="Enter your registered email"
                     value={fpEmail}
-                    onChange={(event) => setFpEmail(event.target.value)}
+                    onChange={(event) => handleFpEmailChange(event.target.value)}
                     onInvalid={(event) => event.preventDefault()}
                   />
                 </div>
@@ -849,7 +1009,7 @@ export default function SharedLoginPage() {
                   <strong className="fallback-code">{resetCodeHint}</strong>
                 </div>
               )}
-              {error && <div className="auth-error">Warning: {error}</div>}
+              {error && <div className="auth-error">⚠️ {error}</div>}
               {success && <div className="auth-success">Success: {success}</div>}
               <form onSubmit={handleVerifyCode} noValidate>
                 <div className="auth-field">
@@ -861,7 +1021,7 @@ export default function SharedLoginPage() {
                     placeholder="Enter 6-digit code"
                     maxLength={6}
                     value={fpCode}
-                    onChange={(event) => setFpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onChange={(event) => handleFpCodeChange(event.target.value)}
                     className="code-input"
                   />
                 </div>
@@ -902,24 +1062,33 @@ export default function SharedLoginPage() {
                   <span>3</span>
                 </div>
               </div>
-              {error && <div className="auth-error">Warning: {error}</div>}
+              {error && <div className="auth-error">⚠️ {error}</div>}
               {success && <div className="auth-success">Success: {success}</div>}
-              <form onSubmit={handleResetPassword} noValidate>
+              <form onSubmit={handleResetPassword} noValidate autoComplete="off">
                 <div className="auth-field">
-                  <label htmlFor="fp-new-pw">New Password</label>
+                  <label htmlFor="fp-new-key">New Password</label>
                   <div className="pw-wrap">
                     <input
-                      id="fp-new-pw"
-                      type={showFpPw ? "text" : "password"}
+                      id="fp-new-key"
+                      name="fp-new-key"
+                      type={isFirefox ? (showFpPw ? "text" : "password") : "text"}
+                      style={!isFirefox && !showFpPw ? { WebkitTextSecurity: "disc" } : {}}
                       placeholder="Enter new password"
                       value={fpNewPw}
-                      onChange={(event) => setFpNewPw(event.target.value)}
+                      onChange={(event) => handleFpNewPwChange(event.target.value)}
+                      onFocus={() => setFpConfirmActive(false)}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck="false"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                     />
                     <button type="button" className="pw-toggle" onClick={() => setShowFpPw((current) => !current)}>
                       {showFpPw ? <EyeOpen /> : <EyeClosed />}
                     </button>
                   </div>
-                  {fpNewPw && (
+                  {fpNewPw && !(fpConfirmActive && isFpNewPwAllOk) && (
                     <div className="pw-requirements">
                       <span className={fpNewPw.length >= 8 ? "req-met" : "req-unmet"}>
                         {fpNewPw.length >= 8 ? "OK" : "NO"} At least 8 characters
@@ -940,15 +1109,25 @@ export default function SharedLoginPage() {
                   )}
                 </div>
                 <div className="auth-field">
-                  <label htmlFor="fp-confirm-pw">Confirm New Password</label>
+                  <label htmlFor="fp-confirm-key">Confirm New Password</label>
                   <div className="pw-wrap">
                     <input
-                      id="fp-confirm-pw"
-                      type={showFpConfirmPw ? "text" : "password"}
+                      id="fp-confirm-key"
+                      name="fp-confirm-key"
+                      type={isFirefox ? (showFpConfirmPw ? "text" : "password") : "text"}
+                      style={!isFirefox && !showFpConfirmPw ? { WebkitTextSecurity: "disc" } : {}}
                       placeholder="Confirm new password"
                       value={fpConfirmPw}
-                      onChange={(event) => setFpConfirmPw(event.target.value)}
+                      onChange={(event) => handleFpConfirmPwChange(event.target.value)}
+                      onFocus={() => setFpConfirmActive(true)}
+                      onClick={() => setFpConfirmActive(true)}
                       className={fpConfirmPw && fpConfirmPw !== fpNewPw ? "input-mismatch" : ""}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck="false"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                     />
                     <button
                       type="button"
@@ -959,7 +1138,7 @@ export default function SharedLoginPage() {
                     </button>
                   </div>
                   {fpConfirmPw && fpConfirmPw !== fpNewPw && (
-                    <span className="pw-mismatch-msg">Warning: your password doesn't match.</span>
+                    <span className="pw-mismatch-msg">⚠️ Passwords do not match.</span>
                   )}
                 </div>
                 <button className="auth-submit-btn" type="submit" disabled={loading}>

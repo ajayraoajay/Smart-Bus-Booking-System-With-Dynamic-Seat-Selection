@@ -20,6 +20,7 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import AdminChangePasswordPage from "./pages/AdminChangePasswordPage";
 
 function AppContent() {
   const location = useLocation();
@@ -56,6 +57,9 @@ function AppContent() {
         } />
         <Route path="/admin/dashboard" element={
           <ProtectedAdminRoute><AdminDashboardPage /></ProtectedAdminRoute>
+        } />
+        <Route path="/admin/change-password" element={
+          <ProtectedAdminRoute><AdminChangePasswordPage /></ProtectedAdminRoute>
         } />
         <Route path="/admin/bookings" element={
           <ProtectedAdminRoute><AdminBookingsPage /></ProtectedAdminRoute>
