@@ -21,31 +21,25 @@ export function AuthProvider({ children }) {
   });
 
   
+  // Load dark mode from localStorage for all users (guests and authenticated)
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("busgo_user");
-    const savedUser = saved ? normalizeUser(JSON.parse(saved)) : null;
-    
-    if (savedUser) {
-      return localStorage.getItem("busgo_dark") === "true";
-    }
-    return false;
+    return localStorage.getItem("busgo_dark") === "true";
   });
 
   const isAdmin = user?.role === "admin";
   const isLoggedIn = !!user;
 
-  
+  // Apply data-theme="dark" attribute to <html> element
   useEffect(() => {
-    if (isLoggedIn && darkMode) {
+    if (darkMode) {
       document.documentElement.setAttribute("data-theme", "dark");
     } else {
       document.documentElement.removeAttribute("data-theme");
     }
-  }, [darkMode, isLoggedIn]);
+  }, [darkMode]);
 
-  
+  // Toggle dark mode across all pages
   const toggleDarkMode = () => {
-    if (!isLoggedIn) return;
     const next = !darkMode;
     setDarkMode(next);
     localStorage.setItem("busgo_dark", String(next));
@@ -60,10 +54,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setUser(null);
-    setDarkMode(false);
     localStorage.removeItem("busgo_user");
-    localStorage.removeItem("busgo_dark");
-    document.documentElement.removeAttribute("data-theme");
   };
 
   return (

@@ -572,7 +572,47 @@
 }
 
 @media (max-width: 480px) {
+  .home-hero {
+    padding: 2rem 1rem;
+    gap: 1.5rem;
+  }
+
   .hero-title {
-    font-size: 2.2rem;
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.05rem;
+  }
+
+  .hero-search-card {
+    padding: 1.25rem 1rem;
+    border-radius: 16px;
+  }
+
+  .hero-contact {
+    gap: 0.75rem;
+  }
+
+  .why-section {
+    padding: 3rem 1rem;
+  }
+
+  .why-card {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .primo-section {
+    padding: 2.5rem 1rem 3.5rem;
+  }
+
+  .primo-card {
+    padding: 1.75rem 1.1rem;
+    border-radius: 18px;
+  }
+
+  .primo-heading {
+    font-size: 1.4rem;
   }
 }
+

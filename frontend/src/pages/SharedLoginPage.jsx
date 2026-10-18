@@ -749,7 +749,6 @@ export default function SharedLoginPage() {
         </div>
 
         <div className="auth-right">
-          <MobileLogo onClick={() => { navigate("/"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }} />
           {mode === "login" && (
             <div className="auth-form-wrap">
               <h2 className="auth-welcome">Welcome</h2>

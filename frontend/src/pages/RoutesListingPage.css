@@ -935,3 +935,67 @@
 .rlp-empty-filter {
   padding: 3rem 2rem;
 }
+
+/* =========================================================
+   RESPONSIVENESS FOR ROUTES LISTING PAGE
+   ========================================================= */
+@media (max-width: 900px) {
+  .rlp-body {
+    flex-direction: column;
+    padding: 0 1rem 3rem;
+  }
+
+  .rlp-sidebar {
+    width: 100%;
+    position: static;
+  }
+
+  .rlp-page-header,
+  .rlp-summary-strip,
+  .rlp-results-count,
+  .rlp-page-error-wrap {
+    padding: 0 1rem;
+  }
+
+  .rlp-search-bar {
+    padding: 1rem;
+    position: static;
+  }
+
+  .rlp-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .rlp-card-right {
+    width: 100%;
+    align-items: flex-start;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .rlp-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .rlp-search-field {
+    min-width: 100%;
+  }
+
+  .rlp-find-btn {
+    width: 100%;
+  }
+
+  .rlp-time-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+

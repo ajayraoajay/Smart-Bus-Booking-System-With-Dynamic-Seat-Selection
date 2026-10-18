@@ -194,6 +194,8 @@
 }
 
 [data-theme="dark"] .upp-field input:focus {
+  background: var(--input-bg, #1e293b) !important;
+  color: var(--text, #f1f5f9) !important;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
 }
@@ -224,3 +226,29 @@
   border-color: #166534;
   color: #86efac;
 }
+
+@media (max-width: 480px) {
+  .upp-page {
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  .upp-card {
+    padding: 1.5rem 1rem;
+    border-radius: 18px;
+  }
+
+  .upp-title {
+    font-size: 1.35rem;
+  }
+
+  .upp-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .upp-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+

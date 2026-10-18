@@ -1023,12 +1023,46 @@
 }
 
 @media (max-width: 900px) {
+  .booking-body {
+    flex-direction: column;
+    padding: 0 1rem 3rem;
+    gap: 1.5rem;
+  }
+
+  .booking-left {
+    width: 100%;
+  }
+
+  .booking-right {
+    width: 100%;
+    position: static;
+  }
+
+  .seat-legend {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
   .sleeper-deck-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
+  .booking-page-header {
+    padding: 1.5rem 1rem;
+  }
+
+  .booking-page-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .seat-map-container {
+    padding: 1rem 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .seat-map-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1057,3 +1091,4 @@
     height: 74px;
   }
 }
+

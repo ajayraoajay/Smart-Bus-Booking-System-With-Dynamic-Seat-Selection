@@ -18,6 +18,7 @@ export default function UserDashboardPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cancelModal, setCancelModal] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [ticketModalBooking, setTicketModalBooking] = useState(null);
@@ -177,16 +178,59 @@ export default function UserDashboardPage() {
               </svg>
             )}
           </button>
-          <button className="udp-buy-btn" onClick={() => navigate("/")}>Buy Tickets</button>
-          <div className="udp-user-info">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span>{user?.name}</span>
+          <div className="udp-desktop-actions">
+            <button className="udp-buy-btn" onClick={() => navigate("/")}>Buy Tickets</button>
+            <div className="udp-user-info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>{user?.name}</span>
+            </div>
+            <button className="udp-logout-btn" onClick={handleLogout}>Logout</button>
           </div>
-          <button className="udp-logout-btn" onClick={handleLogout}>Logout</button>
+          <button
+            className={`udp-hamburger ${mobileMenuOpen ? "open" : ""}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            <span /><span /><span />
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="udp-mobile-menu">
+            <button className="udp-mobile-item" onClick={() => { setMobileMenuOpen(false); navigate("/"); }}>Home</button>
+            <button className="udp-mobile-item" onClick={() => { setMobileMenuOpen(false); navigate("/about"); }}>About</button>
+            <button className="udp-mobile-item" onClick={() => { setMobileMenuOpen(false); navigate("/contact"); }}>Contact</button>
+            <button className="udp-mobile-item active" onClick={() => { setMobileMenuOpen(false); navigate("/user/dashboard"); }}>Dashboard</button>
+            <div className="udp-mobile-divider" />
+            <button className="udp-mobile-item" onClick={() => { setMobileMenuOpen(false); navigate("/user/profile"); }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              Update Profile
+            </button>
+            <button className="udp-mobile-item" onClick={() => { setMobileMenuOpen(false); navigate("/user/change-password"); }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+              Change Password
+            </button>
+            <button className="udp-mobile-item udp-mobile-buy" onClick={() => { setMobileMenuOpen(false); navigate("/"); }}>
+              Buy Tickets
+            </button>
+            <div className="udp-mobile-divider" />
+            <div className="udp-mobile-user-row">
+              <span className="udp-mobile-username">👤 {user?.name}</span>
+              <button className="udp-mobile-logout" onClick={() => { setMobileMenuOpen(false); handleLogout(); }}>
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="udp-hero">

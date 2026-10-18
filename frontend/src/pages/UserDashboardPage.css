@@ -133,7 +133,43 @@
 
 .udp-buy-btn:hover { background: #1d4ed8; }
 
+.udp-desktop-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.udp-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.udp-hamburger:hover {
+  background: #f1f5f9;
+}
+
+.udp-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #374151;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+.udp-mobile-menu {
+  display: none;
+}
+
 .udp-user-info {
+
   display: flex;
   align-items: center;
   gap: 6px;
@@ -627,3 +663,179 @@
   color: #94a3b8;
   border-color: #334155;
 }
+
+/* =========================================================
+   RESPONSIVENESS FOR USER DASHBOARD
+   ========================================================= */
+@media (max-width: 900px) {
+  .udp-header {
+    padding: 0 1rem;
+    position: relative;
+  }
+
+  .udp-nav {
+    display: none;
+  }
+
+  .udp-desktop-actions {
+    display: none;
+  }
+
+  .udp-hamburger {
+    display: flex;
+  }
+
+  .udp-mobile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem 1.25rem 1.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    z-index: 200;
+  }
+
+  .udp-mobile-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: none;
+    color: #374151;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.65rem 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.2s;
+  }
+
+  .udp-mobile-item:hover,
+  .udp-mobile-item.active {
+    color: #2563eb;
+    background: #eff6ff;
+  }
+
+  .udp-mobile-buy {
+    background: #2563eb !important;
+    color: white !important;
+    justify-content: center;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    font-weight: 700;
+  }
+
+  .udp-mobile-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 0.35rem 0;
+  }
+
+  .udp-mobile-user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.5rem 0;
+  }
+
+  .udp-mobile-username {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #374151;
+  }
+
+  .udp-mobile-logout {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .udp-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .udp-body {
+    padding: 1.25rem 1rem 3rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .udp-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .udp-hero {
+    padding: 2rem 1rem;
+  }
+
+  .udp-hero h1 {
+    font-size: 2rem;
+  }
+
+  .udp-stat-card {
+    padding: 1.25rem;
+  }
+
+  .udp-stat-value {
+    font-size: 1.8rem;
+  }
+
+  .udp-stat-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Dark mode overrides for mobile drawer */
+.udp-dark .udp-hamburger span {
+  background: var(--text, #f1f5f9);
+}
+
+.udp-dark .udp-hamburger:hover {
+  background: var(--surface2, #162032);
+}
+
+.udp-dark .udp-mobile-menu {
+  background: var(--surface, #1e293b);
+  border-bottom-color: var(--border, #334155);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.udp-dark .udp-mobile-item {
+  color: var(--text, #f1f5f9);
+}
+
+.udp-dark .udp-mobile-item:hover,
+.udp-dark .udp-mobile-item.active {
+  color: #60a5fa;
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.udp-dark .udp-mobile-divider {
+  background: var(--border, #334155);
+}
+
+.udp-dark .udp-mobile-username {
+  color: var(--text2, #e2e8f0);
+}
+
+.udp-dark .udp-mobile-logout {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
