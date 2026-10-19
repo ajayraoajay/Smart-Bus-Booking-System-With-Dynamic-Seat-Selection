@@ -21,7 +21,7 @@ export default function AboutPage() {
   ];
 
   const team = [
-    { name: "Operations Team", role: "Route & Schedule Management", icon: "🗺️" },
+    { name: "Operations Team", role: "Route & Schedule Management", icon: "⚙️" },
     { name: "Support Team",    role: "Passenger Assistance",         icon: "🎧" },
     { name: "Tech Team",       role: "Platform Development",         icon: "💻" },
   ];

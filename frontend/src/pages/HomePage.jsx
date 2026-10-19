@@ -13,6 +13,8 @@ function CitySearchSelect({
   onChange,
   options = [],
   disabled = false,
+  headerAction = null,
+  onError = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(value || "");
@@ -39,16 +41,17 @@ function CitySearchSelect({
 
   const filteredOptions = useMemo(() => {
     if (!query.trim()) return options;
-    const lower = query.toLowerCase();
-    return options.filter((city) => city.toLowerCase().includes(lower));
+    const lower = query.trim().toLowerCase();
+    return options.filter((city) => city.trim().toLowerCase().includes(lower));
   }, [options, query]);
 
   const handleInputChange = (e) => {
     const text = e.target.value;
     setQuery(text);
     setIsOpen(true);
+    if (onError) onError("");
 
-    const match = options.find((opt) => opt.toLowerCase() === text.trim().toLowerCase());
+    const match = options.find((opt) => opt.trim().toLowerCase() === text.trim().toLowerCase());
     if (match) {
       onChange(match);
     } else {
@@ -57,9 +60,19 @@ function CitySearchSelect({
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && isOpen && filteredOptions.length > 0) {
+    if (e.key === "Enter") {
+      const trimmed = query.trim();
+      if (!trimmed) return;
       e.preventDefault();
-      handleSelect(filteredOptions[0]);
+      if (filteredOptions.length > 0) {
+        handleSelect(filteredOptions[0]);
+        if (onError) onError("");
+      } else {
+        setIsOpen(false);
+        if (onError) {
+          onError("No matching city found.");
+        }
+      }
     }
   };
 
@@ -67,14 +80,18 @@ function CitySearchSelect({
     setQuery(city);
     onChange(city);
     setIsOpen(false);
+    if (onError) onError("");
   };
 
   return (
-    <div className="search-field" ref={containerRef}>
-      <label htmlFor={id}>
-        {icon}
-        {label}
-      </label>
+    <div className={`search-field ${headerAction ? "search-field-with-swap" : ""}`} ref={containerRef}>
+      <div className="search-field-header">
+        <label htmlFor={id}>
+          {icon}
+          {label}
+        </label>
+        {headerAction}
+      </div>
       <div className={`city-autocomplete-wrap ${disabled ? "disabled" : ""} ${isOpen ? "open" : ""}`}>
         <input
           id={id}
@@ -98,6 +115,7 @@ function CitySearchSelect({
               e.stopPropagation();
               setQuery("");
               onChange("");
+              if (onError) onError("");
               setIsOpen(true);
             }}
             title="Clear"
@@ -156,6 +174,7 @@ function HomePage() {
   const [pickupCity, setPickupCity] = useState("");
   const [droppingCity, setDroppingCity] = useState("");
   const [departureDate, setDepartureDate] = useState("");
+  const [isDateTyping, setIsDateTyping] = useState(false);
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
 
@@ -181,29 +200,35 @@ function HomePage() {
   };
 
   const fromCities = useMemo(() => {
-    let cities = routes.map((r) => r.fromCity).filter(Boolean);
-    if (droppingCity) {
-      cities = cities.filter(
-        (c) => c.trim().toLowerCase() !== droppingCity.trim().toLowerCase()
-      );
+    let cities = [];
+    const targetTo = droppingCity?.trim().toLowerCase();
+    if (targetTo) {
+      cities = routes
+        .filter((r) => r.toCity && r.toCity.trim().toLowerCase() === targetTo)
+        .map((r) => r.fromCity?.trim())
+        .filter(Boolean);
+    } else {
+      cities = routes.map((r) => r.fromCity?.trim()).filter(Boolean);
+    }
+    if (targetTo) {
+      cities = cities.filter((c) => c.toLowerCase() !== targetTo);
     }
     return [...new Set(cities)];
   }, [routes, droppingCity]);
 
   const toCities = useMemo(() => {
     let cities = [];
-    if (pickupCity) {
+    const targetFrom = pickupCity?.trim().toLowerCase();
+    if (targetFrom) {
       cities = routes
-        .filter((r) => r.fromCity?.toLowerCase() === pickupCity.toLowerCase())
-        .map((r) => r.toCity)
+        .filter((r) => r.fromCity && r.fromCity.trim().toLowerCase() === targetFrom)
+        .map((r) => r.toCity?.trim())
         .filter(Boolean);
     } else {
-      cities = routes.map((r) => r.toCity).filter(Boolean);
+      cities = routes.map((r) => r.toCity?.trim()).filter(Boolean);
     }
-    if (pickupCity) {
-      cities = cities.filter(
-        (c) => c.trim().toLowerCase() !== pickupCity.trim().toLowerCase()
-      );
+    if (targetFrom) {
+      cities = cities.filter((c) => c.toLowerCase() !== targetFrom);
     }
     return [...new Set(cities)];
   }, [routes, pickupCity]);
@@ -211,19 +236,19 @@ function HomePage() {
   const handleSwapCities = (e) => {
     e.preventDefault();
     if (!pickupCity && !droppingCity) return;
-    const currentFrom = pickupCity;
-    const currentTo = droppingCity;
+    const currentFrom = pickupCity?.trim() || "";
+    const currentTo = droppingCity?.trim() || "";
 
-    setPickupCity(currentTo || "");
+    setPickupCity(currentTo);
     if (currentTo && currentFrom) {
       const validTo = routes.some(
         (r) =>
-          r.fromCity?.toLowerCase() === currentTo.toLowerCase() &&
-          r.toCity?.toLowerCase() === currentFrom.toLowerCase()
+          r.fromCity?.trim().toLowerCase() === currentTo.toLowerCase() &&
+          r.toCity?.trim().toLowerCase() === currentFrom.toLowerCase()
       );
       setDroppingCity(validTo ? currentFrom : "");
     } else {
-      setDroppingCity(currentFrom || "");
+      setDroppingCity(currentFrom);
     }
     setSearchError("");
   };
@@ -296,7 +321,7 @@ function HomePage() {
             </div>
           )}
 
-          {searchError && <div className="hero-search-error">Warning: {searchError}</div>}
+          {searchError && <div className="hero-search-error">⚠️ {searchError}</div>}
 
           <CitySearchSelect
             id="search-from-city"
@@ -314,8 +339,8 @@ function HomePage() {
               if (city && droppingCity) {
                 const isValidPair = routes.some(
                   (r) =>
-                    r.fromCity?.toLowerCase() === city.toLowerCase() &&
-                    r.toCity?.toLowerCase() === droppingCity.toLowerCase()
+                    r.fromCity?.trim().toLowerCase() === city.trim().toLowerCase() &&
+                    r.toCity?.trim().toLowerCase() === droppingCity.trim().toLowerCase()
                 );
                 if (!isValidPair) {
                   setDroppingCity("");
@@ -324,21 +349,8 @@ function HomePage() {
               setSearchError("");
             }}
             options={fromCities}
+            onError={setSearchError}
           />
-
-          <div className="swap-cities-wrap">
-            <button
-              type="button"
-              className="swap-cities-btn"
-              onClick={handleSwapCities}
-              title="Swap departure and destination cities"
-              aria-label="Swap departure and destination cities"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="16" height="16">
-                <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
 
           <CitySearchSelect
             id="search-to-city"
@@ -353,9 +365,34 @@ function HomePage() {
             value={droppingCity}
             onChange={(city) => {
               setDroppingCity(city);
+              if (city && pickupCity) {
+                const isValidPair = routes.some(
+                  (r) =>
+                    r.fromCity?.trim().toLowerCase() === pickupCity.trim().toLowerCase() &&
+                    r.toCity?.trim().toLowerCase() === city.trim().toLowerCase()
+                );
+                if (!isValidPair) {
+                  setPickupCity("");
+                }
+              }
               setSearchError("");
             }}
             options={toCities}
+            onError={setSearchError}
+            headerAction={
+              <div className="swap-cities-wrap">
+                <button
+                  type="button"
+                  className="swap-cities-btn"
+                  onClick={handleSwapCities}
+                  aria-label="Swap departure and destination cities"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="16" height="16">
+                    <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
+            }
           />
 
           <div className="search-field">
@@ -378,10 +415,27 @@ function HomePage() {
               <input
                 id="search-departure-date"
                 type="date"
+                className={!departureDate && !isDateTyping ? "date-input-empty" : "date-input-typing"}
                 value={departureDate}
+                onInput={() => setIsDateTyping(true)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Tab" && e.key !== "Escape") {
+                    setIsDateTyping(true);
+                  }
+                }}
                 onChange={(e) => {
                   setDepartureDate(e.target.value);
                   setSearchError("");
+                  if (e.target.value) {
+                    setIsDateTyping(true);
+                  } else {
+                    setIsDateTyping(false);
+                  }
+                }}
+                onBlur={(e) => {
+                  if (!e.target.value && !departureDate) {
+                    setIsDateTyping(false);
+                  }
                 }}
                 min={getLocalDateString()}
               />

@@ -146,7 +146,8 @@ body {
   background: var(--input-bg);
   border-color: var(--border);
 }
-[data-theme="dark"] .date-input-wrap input { color: var(--text); }
+[data-theme="dark"] .date-input-wrap input:not(.date-input-empty) { color: var(--text); }
+[data-theme="dark"] .date-input-wrap input.date-input-empty { color: var(--text3); }
 
 
 [data-theme="dark"] .about-page { background: var(--bg); }

@@ -157,7 +157,7 @@ export default function ContactPage() {
       ),
       color: "purple",
       title: "Address",
-      lines: ["Vijayanagar,", "Bangalore,", "India"],
+      lines: ["Vijayanagar, Bangalore,", "India"],
     },
     {
       icon: (

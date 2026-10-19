@@ -293,7 +293,7 @@ export default function RoutesListingPage() {
   const selectedLayoutFilters = selectedBusFilters.filter((filter) => filter === "Seater" || filter === "Sleeper");
   const selectedComfortFilters = selectedBusFilters.filter((filter) => filter === "AC" || filter === "Non AC");
   const hasSearchCriteria = Boolean(pickupCity || droppingCity || departureDate);
-  const journeySummary = [pickupCity, droppingCity].filter(Boolean).join(" to ");
+  const journeySummary = [pickupCity, droppingCity].filter(Boolean).join(" To ");
   const formattedJourneyDate = formatJourneyDate(departureDate);
 
   // Determine fromCity and toCity to exclude them from boarding and dropping points
@@ -480,43 +480,84 @@ export default function RoutesListingPage() {
         </div>
       </div>
 
-      {(hasSearchCriteria || selectedBoardingPoint || selectedDroppingPoint) && (
+      {!loading && !error && (hasRouteBuses || hasSearchCriteria || selectedBusFilters.length > 0 || selectedBoardingPoint || selectedDroppingPoint) && (
         <div className="rlp-summary-strip">
-          {pickupCity && <span className="rlp-summary-pill">From: {pickupCity}</span>}
-          {droppingCity && <span className="rlp-summary-pill">To: {droppingCity}</span>}
-          {formattedJourneyDate && <span className="rlp-summary-pill">Date: {formattedJourneyDate}</span>}
+          {hasRouteBuses && (
+            <span className="rlp-results-count">
+              {sortedSchedules.length} bus{sortedSchedules.length === 1 ? "" : "es"} found
+            </span>
+          )}
+          {formattedJourneyDate && <span className="rlp-summary-pill">Journey Date: {formattedJourneyDate}</span>}
+          {selectedBusFilters.map((busFilter) => (
+            <span
+              key={busFilter}
+              className="rlp-summary-pill rlp-summary-pill-filter"
+              onClick={() => toggleBusFilter(busFilter)}
+              title={`Remove ${busFilter} filter`}
+            >
+              Bus Type: {busFilter}
+              <button
+                type="button"
+                className="rlp-pill-remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleBusFilter(busFilter);
+                }}
+                aria-label={`Remove ${busFilter} filter`}
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          ))}
           {selectedBoardingPoint && (
-            <span className="rlp-summary-pill rlp-summary-pill-filter">
+            <span
+              className="rlp-summary-pill rlp-summary-pill-filter"
+              onClick={() => setSelectedBoardingPoint("")}
+              title="Remove boarding point filter"
+            >
               Boarding: {selectedBoardingPoint}
               <button
                 type="button"
                 className="rlp-pill-remove"
-                onClick={() => setSelectedBoardingPoint("")}
-                title="Clear boarding point filter"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedBoardingPoint("");
+                }}
+                aria-label="Remove boarding point filter"
               >
-                ×
+                <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </span>
           )}
           {selectedDroppingPoint && (
-            <span className="rlp-summary-pill rlp-summary-pill-filter">
+            <span
+              className="rlp-summary-pill rlp-summary-pill-filter"
+              onClick={() => setSelectedDroppingPoint("")}
+              title="Remove dropping point filter"
+            >
               Dropping: {selectedDroppingPoint}
               <button
                 type="button"
                 className="rlp-pill-remove"
-                onClick={() => setSelectedDroppingPoint("")}
-                title="Clear dropping point filter"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDroppingPoint("");
+                }}
+                aria-label="Remove dropping point filter"
               >
-                ×
+                <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </span>
           )}
-        </div>
-      )}
-
-      {!loading && !error && hasRouteBuses && (
-        <div className="rlp-results-count">
-          {sortedSchedules.length} bus{sortedSchedules.length === 1 ? "" : "es"} found
         </div>
       )}
 
