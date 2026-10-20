@@ -462,6 +462,7 @@
   border-radius: 10px;
   background: #f9fafb;
   transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
 }
 
 .date-input-wrap:focus-within {
@@ -479,6 +480,29 @@
   flex: 1;
   font-family: inherit;
   cursor: pointer;
+}
+
+.date-input-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+.date-calendar-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.date-calendar-btn:hover {
+  color: #2563eb;
 }
 
 .date-input-wrap input[type="date"]::-webkit-datetime-edit,
@@ -548,6 +572,18 @@
 [data-theme="dark"] .date-input-wrap input[type="date"].date-input-typing::-webkit-datetime-edit-day-field,
 [data-theme="dark"] .date-input-wrap input[type="date"].date-input-typing::-webkit-datetime-edit-year-field {
   color: var(--text, #f1f5f9) !important;
+}
+
+[data-theme="dark"] .date-calendar-btn {
+  color: var(--text3, #94a3b8);
+}
+
+[data-theme="dark"] .date-calendar-btn:hover {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .date-calendar-btn svg {
+  stroke: currentColor;
 }
 
 .find-tickets-btn {

@@ -340,6 +340,20 @@ export default function ContactPage() {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />
+          <a
+            className="cp-map-overlay-btn"
+            href="https://www.google.com/maps/search/?api=1&query=Vijayanagar%2C+Bangalore%2C+India"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open in Maps"
+          >
+            Open in Maps
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="14" height="14">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
         </div>
       </section>
 

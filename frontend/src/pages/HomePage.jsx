@@ -175,6 +175,7 @@ function HomePage() {
   const [droppingCity, setDroppingCity] = useState("");
   const [departureDate, setDepartureDate] = useState("");
   const [isDateTyping, setIsDateTyping] = useState(false);
+  const homeDateInputRef = useRef(null);
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
 
@@ -405,7 +406,14 @@ function HomePage() {
               </svg>
               Date of Journey
             </label>
-            <div className="date-input-wrap">
+            <div
+              className="date-input-wrap"
+              onClick={() => {
+                try {
+                  homeDateInputRef.current?.showPicker();
+                } catch {}
+              }}
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
@@ -414,6 +422,7 @@ function HomePage() {
               </svg>
               <input
                 id="search-departure-date"
+                ref={homeDateInputRef}
                 type="date"
                 className={!departureDate && !isDateTyping ? "date-input-empty" : "date-input-typing"}
                 value={departureDate}
@@ -437,8 +446,33 @@ function HomePage() {
                     setIsDateTyping(false);
                   }
                 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try {
+                    e.currentTarget.showPicker();
+                  } catch {}
+                }}
                 min={getLocalDateString()}
               />
+              <button
+                type="button"
+                className="date-calendar-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try {
+                    homeDateInputRef.current?.showPicker();
+                  } catch {}
+                }}
+                tabIndex="-1"
+                aria-label="Open calendar"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </button>
             </div>
           </div>
 
