@@ -180,9 +180,9 @@ function AdminSchedulesPage() {
     <div className="page-container">
       <div className="top-action-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div
-          onClick={() => { navigate("/"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }}
+          onClick={() => { navigate("/admin/dashboard"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }}
           style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}
-          title="Go to Home"
+          title="Go to Admin Dashboard"
         >
           <div style={{ width: "36px", height: "36px" }}>
             <svg viewBox="0 0 24 24" fill="none">

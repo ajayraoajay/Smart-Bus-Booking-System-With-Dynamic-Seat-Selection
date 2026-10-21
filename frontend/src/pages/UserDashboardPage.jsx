@@ -111,7 +111,7 @@ export default function UserDashboardPage() {
   return (
     <div className={`udp-page ${darkMode ? "udp-dark" : ""}`}>
       <div className="udp-header">
-        <div className="udp-header-left" onClick={() => { navigate("/"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }}>
+        <div className="udp-header-left" onClick={() => { navigate("/user/dashboard"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }} style={{ cursor: "pointer" }} title="Go to User Dashboard">
           <div className="udp-logo-icon">
             <svg viewBox="0 0 24 24" fill="none">
               <rect width="24" height="24" rx="6" fill="#2563EB" />

@@ -839,3 +839,54 @@
   color: #fca5a5;
 }
 
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (901px - 1024px)
+   ========================================================= */
+@media (min-width: 901px) and (max-width: 1024px) {
+  .udp-header {
+    padding: 0 1.25rem;
+  }
+
+  .udp-nav {
+    gap: 1rem;
+  }
+
+  .udp-nav button,
+  .udp-profile-btn {
+    font-size: 0.88rem;
+  }
+
+  .udp-desktop-actions {
+    gap: 0.6rem;
+  }
+
+  .udp-buy-btn {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.84rem;
+  }
+
+  .udp-logout-btn {
+    padding: 0.42rem 0.85rem;
+    font-size: 0.84rem;
+  }
+
+  .udp-user-info {
+    font-size: 0.84rem;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .udp-body {
+    padding: 1.75rem 1.25rem 3.5rem;
+  }
+
+  .udp-stats {
+    gap: 1rem;
+  }
+
+  .udp-stat-card {
+    padding: 1.25rem;
+  }
+}

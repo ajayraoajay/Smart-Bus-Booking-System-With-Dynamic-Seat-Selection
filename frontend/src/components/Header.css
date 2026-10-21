@@ -526,3 +526,52 @@
   background: #3b82f6;
 }
 
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (769px - 1024px)
+   ========================================================= */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .header {
+    padding: 0 1.25rem;
+  }
+
+  .header-nav {
+    gap: 1.1rem;
+  }
+
+  .nav-link {
+    font-size: 0.88rem;
+  }
+
+  .header-actions {
+    gap: 0.5rem;
+  }
+
+  .btn-theme-toggle {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .btn-admin,
+  .btn-dashboard,
+  .header-user .btn-outline {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .header-username {
+    font-size: 0.82rem;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-user {
+    gap: 0.5rem;
+  }
+
+  .btn-outline {
+    padding: 0.42rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}

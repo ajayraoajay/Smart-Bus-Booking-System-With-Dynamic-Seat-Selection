@@ -320,3 +320,16 @@
   color: #6b7280;
   border: 1px solid #e5e7eb;
 }
+
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (641px - 1024px)
+   ========================================================= */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .schedule-content {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .schedule-page-header {
+    padding: 2rem 1.5rem 1.75rem;
+  }
+}

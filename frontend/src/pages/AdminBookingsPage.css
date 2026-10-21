@@ -182,3 +182,16 @@
     font-size: 1.6rem;
   }
 }
+
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (641px - 1024px)
+   ========================================================= */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .abp-page {
+    padding: 1.5rem 1.25rem 2.5rem;
+  }
+
+  .abp-shell {
+    max-width: 100%;
+  }
+}

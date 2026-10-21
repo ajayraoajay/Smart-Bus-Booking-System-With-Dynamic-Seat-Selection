@@ -1092,3 +1092,26 @@
   }
 }
 
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (901px - 1024px)
+   ========================================================= */
+@media (min-width: 901px) and (max-width: 1024px) {
+  .booking-body {
+    padding: 0 1.25rem 3.5rem;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+  }
+
+  .booking-right {
+    width: 310px;
+  }
+
+  .booking-form-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .schedule-info-card,
+  .seat-legend {
+    padding: 1.25rem;
+  }
+}

@@ -622,4 +622,27 @@
   }
 }
 
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (901px - 1024px)
+   ========================================================= */
+@media (min-width: 901px) and (max-width: 1024px) {
+  .cp-body {
+    padding: 0 1.25rem;
+    gap: 1.5rem;
+    margin: 2rem auto;
+  }
 
+  .cp-cards {
+    width: 290px;
+  }
+
+  .cp-form-wrap {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .cp-map-section,
+  .cp-faq-section {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}

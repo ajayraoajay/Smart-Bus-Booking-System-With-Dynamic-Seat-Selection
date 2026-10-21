@@ -381,3 +381,28 @@
   }
 }
 
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (901px - 1024px)
+   ========================================================= */
+@media (min-width: 901px) and (max-width: 1024px) {
+  .about-hero {
+    padding: 3.5rem 1.5rem 2.5rem;
+    gap: 1.5rem;
+  }
+
+  .about-hero-content {
+    max-width: 500px;
+  }
+
+  .about-story {
+    padding: 3.5rem 1.5rem;
+    gap: 2rem;
+  }
+
+  .about-mission,
+  .about-how,
+  .about-team {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}

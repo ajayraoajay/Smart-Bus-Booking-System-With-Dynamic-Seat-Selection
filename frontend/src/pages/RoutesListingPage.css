@@ -1447,7 +1447,7 @@
 
 .rlp-quick-btn:hover {
   background: #e2e8f0;
-  color: #1e293b;
+  color: #2563eb;
 }
 
 .rlp-modal-actions {
@@ -1851,3 +1851,204 @@
   }
 }
 
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (901px - 1024px)
+   ========================================================= */
+@media (min-width: 901px) and (max-width: 1024px) {
+  .rlp-page-header,
+  .rlp-summary-strip,
+  .rlp-results-count,
+  .rlp-page-error-wrap {
+    padding: 0 1.25rem;
+  }
+
+  .rlp-body {
+    padding: 0 1.25rem 3.5rem;
+    gap: 1.25rem;
+  }
+
+  .rlp-sidebar {
+    width: 230px;
+  }
+
+  .rlp-card {
+    padding: 1.25rem;
+  }
+
+  .rlp-card-time-row {
+    gap: 1rem;
+  }
+}
+
+/* =========================================================
+   TABLET 768px RESPONSIVENESS (641px - 900px)
+   ========================================================= */
+@media (min-width: 641px) and (max-width: 900px) {
+  .rlp-page-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 1.25rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-page-header-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+  }
+
+  .rlp-page-header-copy h1 {
+    display: block !important;
+    font-size: 1.55rem !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+  }
+
+  .rlp-page-subtitle {
+    display: block !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+  }
+
+  .rlp-page-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+    flex-shrink: 0 !important;
+    margin-top: 0.25rem !important;
+  }
+
+  .rlp-mobile-filter-btn {
+    display: inline-flex !important;
+    padding: 0.65rem 1.15rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+  }
+
+  .rlp-change-search-btn {
+    padding: 0.65rem 1.15rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+
+  .rlp-summary-strip,
+  .rlp-results-count,
+  .rlp-page-error-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 1.25rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 0 1.25rem 3rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-results {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    padding: 1.35rem !important;
+  }
+
+  .rlp-card-top,
+  .rlp-card-bottom,
+  .rlp-card-title-row {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-card-bottom {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+  }
+
+  .rlp-card-time-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1.5rem !important;
+    width: auto !important;
+    justify-content: flex-start !important;
+  }
+
+  .rlp-select-btn {
+    display: inline-flex !important;
+    padding: 0.65rem 1.4rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* =========================================================
+   RESPONSIVENESS (410px - 640px) - Full-width select seat card
+   ========================================================= */
+@media (min-width: 410px) and (max-width: 640px) {
+  .rlp-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-results {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-card-top,
+  .rlp-card-bottom,
+  .rlp-card-title-row {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .rlp-card-time-row {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}

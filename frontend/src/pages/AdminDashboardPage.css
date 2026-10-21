@@ -590,7 +590,50 @@
 .adm-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
 
 
-@media (max-width: 1024px) { .adm-stats { grid-template-columns: repeat(2, 1fr); } }
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (769px - 1024px)
+   ========================================================= */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .adm-topbar {
+    padding: 0 1.25rem;
+  }
+
+  .adm-title {
+    font-size: 1.05rem;
+  }
+
+  .adm-subtitle {
+    font-size: 0.74rem;
+  }
+
+  .adm-desktop-actions {
+    gap: 0.5rem;
+  }
+
+  .adm-change-pw-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .adm-logout-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .adm-theme-toggle {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .adm-body {
+    padding: 1.5rem 1.25rem 3.5rem;
+  }
+
+  .adm-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
 @media (max-width: 768px) {
   .adm-topbar { padding: 0 1rem; height: auto; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1rem; }
   .adm-topbar-center { position: static; transform: none; order: 3; width: 100%; margin-top: 0.25rem; }

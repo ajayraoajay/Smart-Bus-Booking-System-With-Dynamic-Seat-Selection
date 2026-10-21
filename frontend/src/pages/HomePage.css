@@ -762,9 +762,89 @@
 /* =========================================================
    RESPONSIVENESS
    ========================================================= */
-@media (max-width: 1024px) {
+/* =========================================================
+   1025px - 1210px RESPONSIVENESS
+   ========================================================= */
+@media (min-width: 1025px) and (max-width: 1210px) {
   .home-hero {
     padding: 3rem 2.5rem;
+    gap: 2.25rem;
+  }
+
+  .hero-left {
+    max-width: 470px;
+    flex: 1 1 auto;
+    flex-shrink: 1;
+  }
+
+  .hero-title {
+    font-size: 3.6rem;
+    line-height: 1.1;
+  }
+
+  .hero-subtitle {
+    font-size: 1.15rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-contact {
+    gap: 1.25rem;
+  }
+
+  .hero-contact span {
+    font-size: 1rem;
+  }
+
+  .hero-search-card {
+    max-width: 480px;
+    flex: 1 1 auto;
+    flex-shrink: 1;
+    padding: 1.65rem 1.75rem;
+  }
+
+  .why-section {
+    padding: 3.5rem 2rem;
+  }
+
+  .primo-section {
+    max-width: 100%;
+    padding: 3.5rem 2rem 4.5rem;
+  }
+
+  .primo-card {
+    max-width: 1150px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+  }
+}
+
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (821px - 1024px)
+   ========================================================= */
+@media (min-width: 821px) and (max-width: 1024px) {
+  .home-hero {
+    padding: 2.5rem 2rem;
+    gap: 2rem;
+  }
+
+  .hero-left {
+    max-width: 440px;
+    flex-shrink: 1;
+  }
+
+  .hero-title {
+    font-size: 3.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero-search-card {
+    max-width: 450px;
+    flex-shrink: 1;
+    padding: 1.5rem 1.5rem;
   }
 }
 

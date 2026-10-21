@@ -58,7 +58,7 @@ export default function ChangePasswordPage() {
     <div className="cpp-page">
       <div
         className="cpp-header-logo"
-        onClick={() => { navigate("/"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }}
+        onClick={() => { navigate("/user/dashboard"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); }}
         style={{
           cursor: "pointer",
           display: "flex",
@@ -67,7 +67,7 @@ export default function ChangePasswordPage() {
           marginBottom: "1.5rem",
           justifyContent: "center",
         }}
-        title="Go to Home"
+        title="Go to User Dashboard"
       >
         <div style={{ width: "36px", height: "36px" }}>
           <svg viewBox="0 0 24 24" fill="none">

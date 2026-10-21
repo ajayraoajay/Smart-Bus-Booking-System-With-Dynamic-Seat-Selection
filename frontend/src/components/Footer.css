@@ -185,3 +185,17 @@
     max-width: 100%;
   }
 }
+
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (769px - 1024px)
+   ========================================================= */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .footer-main {
+    gap: 2rem;
+    padding: 3rem 1.5rem 2.5rem;
+  }
+
+  .footer-bottom {
+    padding: 1.25rem 1.5rem;
+  }
+}

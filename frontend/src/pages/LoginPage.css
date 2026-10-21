@@ -918,3 +918,21 @@
   color: var(--text3, #94a3b8) !important;
   border-color: var(--border, #334155) !important;
 }
+
+/* =========================================================
+   1024px LAPTOP RESPONSIVENESS (901px - 1024px)
+   ========================================================= */
+@media (min-width: 901px) and (max-width: 1024px) {
+  .auth-container {
+    max-width: 860px;
+  }
+
+  .auth-left {
+    width: 310px;
+    padding: 2rem 1.5rem;
+  }
+
+  .auth-right {
+    padding: 2rem 1.5rem;
+  }
+}
