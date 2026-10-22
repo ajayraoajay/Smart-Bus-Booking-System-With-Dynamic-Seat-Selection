@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ConfirmationModal from "../components/ConfirmationModal";
@@ -11,11 +11,48 @@ const TABS = ["All Bookings", "Schedules", "Routes"];
 const sortBookingsNewestFirst = (bookingList) =>
   [...bookingList].sort((left, right) => (right.id ?? 0) - (left.id ?? 0));
 
+const sortRoutesNewestFirst = (routeList) =>
+  [...routeList].sort((left, right) => (Number(right.id) || 0) - (Number(left.id) || 0));
+
+export const calculateScheduleDuration = (departureTime, arrivalTime, arrivalDay = 1) => {
+  if (!departureTime || !arrivalTime) return "";
+  const depParts = departureTime.split(":").map(Number);
+  const arrParts = arrivalTime.split(":").map(Number);
+  if (depParts.length < 2 || arrParts.length < 2) return "";
+  const [depH, depM] = depParts;
+  const [arrH, arrM] = arrParts;
+  if (isNaN(depH) || isNaN(depM) || isNaN(arrH) || isNaN(arrM)) return "";
+
+  const day = Math.max(1, parseInt(arrivalDay, 10) || 1);
+  const depMinutes = depH * 60 + depM;
+  const arrMinutes = arrH * 60 + arrM;
+
+  let totalMinutes;
+  if (day > 1) {
+    totalMinutes = (day - 1) * 24 * 60 + (arrMinutes - depMinutes);
+  } else {
+    totalMinutes = arrMinutes - depMinutes;
+    if (totalMinutes < 0) {
+      totalMinutes += 24 * 60;
+    }
+  }
+
+  if (totalMinutes < 0) totalMinutes = 0;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+
+  if (mins === 0) return `${hours}h`;
+  if (hours === 0) return `${mins}m`;
+  return `${hours}h ${mins}m`;
+};
+
 const createEmptyScheduleForm = () => ({
   routeId: "",
   busNumber: "",
   totalSeats: "",
   departureTime: "",
+  arrivalDay: "1",
   arrivalTime: "",
   travelDate: "",
   acType: "Non-A/C",
@@ -24,6 +61,171 @@ const createEmptyScheduleForm = () => ({
   boardingSelections: [],
   droppingSelections: [],
 });
+
+function RouteSearchSelect({
+  value,
+  onChange,
+  routes = [],
+  placeholder = "Search route by city name...",
+  disabled = false,
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const selectedRoute = useMemo(
+    () => routes.find((r) => String(r.id) === String(value)),
+    [routes, value]
+  );
+
+  const [query, setQuery] = useState(
+    selectedRoute ? `${selectedRoute.fromCity} → ${selectedRoute.toCity}` : ""
+  );
+
+  useEffect(() => {
+    if (selectedRoute) {
+      setQuery(`${selectedRoute.fromCity} → ${selectedRoute.toCity}`);
+    } else {
+      setQuery("");
+    }
+  }, [selectedRoute]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+        if (selectedRoute) {
+          setQuery(`${selectedRoute.fromCity} → ${selectedRoute.toCity}`);
+        } else {
+          setQuery("");
+        }
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [selectedRoute]);
+
+  const filteredRoutes = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return routes;
+    return routes.filter((r) => {
+      const from = (r.fromCity || "").toLowerCase();
+      const to = (r.toCity || "").toLowerCase();
+      return (
+        from.includes(trimmed) ||
+        to.includes(trimmed) ||
+        `${from} -> ${to}`.includes(trimmed) ||
+        `${from} → ${to}`.includes(trimmed) ||
+        `${from} to ${to}`.includes(trimmed)
+      );
+    });
+  }, [routes, query]);
+
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    setQuery(text);
+    setIsOpen(true);
+
+    const match = routes.find(
+      (r) =>
+        `${r.fromCity} → ${r.toCity}`.toLowerCase() === text.trim().toLowerCase() ||
+        `${r.fromCity} -> ${r.toCity}`.toLowerCase() === text.trim().toLowerCase()
+    );
+    if (match) {
+      onChange(String(match.id));
+    } else if (value) {
+      onChange("");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+      e.preventDefault();
+      if (filteredRoutes.length > 0) {
+        handleSelect(filteredRoutes[0]);
+      } else {
+        setIsOpen(false);
+      }
+    }
+  };
+
+  const handleSelect = (r) => {
+    setQuery(`${r.fromCity} → ${r.toCity}`);
+    onChange(String(r.id));
+    setIsOpen(false);
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    setQuery("");
+    onChange("");
+    setIsOpen(true);
+  };
+
+  return (
+    <div className={`adm-route-search-wrap ${isOpen ? "open" : ""}`} ref={containerRef}>
+      <input
+        type="text"
+        className="adm-route-search-input"
+        placeholder={placeholder}
+        value={query}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onFocus={() => {
+          if (!disabled) setIsOpen(true);
+        }}
+        disabled={disabled}
+        autoComplete="off"
+      />
+      {query && !disabled && (
+        <button
+          type="button"
+          className="adm-route-clear-btn"
+          onClick={handleClear}
+          title="Clear route"
+        >
+          ×
+        </button>
+      )}
+      <button
+        type="button"
+        className="adm-route-toggle-btn"
+        onClick={() => {
+          if (!disabled) setIsOpen(!isOpen);
+        }}
+        disabled={disabled}
+        title="Toggle route options"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {isOpen && !disabled && (
+        <ul className="adm-route-dropdown-list">
+          {filteredRoutes.length > 0 ? (
+            filteredRoutes.map((r) => {
+              const isSelected = String(r.id) === String(value);
+              return (
+                <li
+                  key={r.id}
+                  className={`adm-route-dropdown-item ${isSelected ? "selected" : ""}`}
+                  onClick={() => handleSelect(r)}
+                >
+                  <span className="adm-route-item-name">{r.fromCity} → {r.toCity}</span>
+                  {isSelected && <span className="adm-route-check-mark">✓</span>}
+                </li>
+              );
+            })
+          ) : (
+            <li className="adm-route-dropdown-empty">No matching route found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 const createEmptyRouteForm = () => ({
   fromCity: "",
@@ -147,7 +349,7 @@ export default function AdminDashboardPage() {
         api.get("/schedules"),
       ]);
       setBookings(sortBookingsNewestFirst(bRes.data));
-      setRoutes(rRes.data);
+      setRoutes(sortRoutesNewestFirst(rRes.data));
       setSchedules(sRes.data);
     } catch (err) {
       setError("Failed to load data.");
@@ -215,8 +417,6 @@ export default function AdminDashboardPage() {
 
   
   const selectedSchedRoute = routes.find((route) => String(route.id) === String(schedForm.routeId));
-  const selectedBoardingPoints = getRoutePointOptions(selectedSchedRoute, "boardingPoints");
-  const selectedDroppingPoints = getRoutePointOptions(selectedSchedRoute, "droppingPoints");
 
   const handleSchedChange = (e) => {
     const { name, value } = e.target;
@@ -232,6 +432,19 @@ export default function AdminDashboardPage() {
         boardingSelections: buildStopSelections(nextBoardingPoints, toStopPayload(currentForm.boardingSelections)),
         droppingSelections: buildStopSelections(nextDroppingPoints, toStopPayload(currentForm.droppingSelections)),
       }));
+      return;
+    }
+
+    if (name === "arrivalDay") {
+      if (value === "") {
+        setSchedForm((currentForm) => ({ ...currentForm, arrivalDay: "" }));
+        return;
+      }
+      const num = parseInt(value, 10);
+      if (isNaN(num) || num < 1) {
+        return;
+      }
+      setSchedForm((currentForm) => ({ ...currentForm, arrivalDay: String(num) }));
       return;
     }
 
@@ -270,12 +483,13 @@ export default function AdminDashboardPage() {
 
     setEditingSchedId(s.id);
     setSchedForm({
-      routeId: s.route?.id ?? "",
+      routeId: s.route?.id ? String(s.route.id) : "",
       busNumber: s.busNumber,
       totalSeats: s.totalSeats,
       acType: s.acType ?? "Non-A/C",
       busType: s.busType ?? "Seater",
       departureTime: normalizeTimeValue(s.departureTime),
+      arrivalDay: String(s.arrivalDay && Number(s.arrivalDay) >= 1 ? s.arrivalDay : 1),
       arrivalTime: normalizeTimeValue(s.arrivalTime),
       travelDate: s.travelDate,
       price: s.price ?? "",
@@ -301,6 +515,12 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    const arrivalDayNum = parseInt(schedForm.arrivalDay, 10);
+    if (!schedForm.arrivalDay || isNaN(arrivalDayNum) || arrivalDayNum < 1) {
+      setSchedErr("Arrival day must be 1 or greater.");
+      return;
+    }
+
     const boardingStops = toStopPayload(schedForm.boardingSelections);
     const droppingStops = toStopPayload(schedForm.droppingSelections);
     if (boardingStops.length === 0 || droppingStops.length === 0) {
@@ -322,6 +542,7 @@ export default function AdminDashboardPage() {
         acType: schedForm.acType,
         busType: schedForm.busType,
         departureTime: schedForm.departureTime,
+        arrivalDay: arrivalDayNum,
         arrivalTime: schedForm.arrivalTime,
         travelDate: schedForm.travelDate,
         price: Number(schedForm.price),
@@ -565,6 +786,7 @@ export default function AdminDashboardPage() {
       } else {
         await api.post("/routes", payload);
         setRouteMsg("Route added successfully!");
+        setRoutePage(1);
       }
 
       setEditingRouteId(null);
@@ -578,13 +800,15 @@ export default function AdminDashboardPage() {
   };
 
   const ROUTES_PER_PAGE = 10;
-  const filteredRoutes = routes.filter((r) => {
-    const q = routeSearchQuery.trim().toLowerCase();
-    if (!q) return true;
-    const from = (r.fromCity || "").toLowerCase();
-    const to = (r.toCity || "").toLowerCase();
-    return from.includes(q) || to.includes(q) || `${from} -> ${to}`.includes(q) || `${from} to ${to}`.includes(q);
-  });
+  const filteredRoutes = sortRoutesNewestFirst(
+    routes.filter((r) => {
+      const q = routeSearchQuery.trim().toLowerCase();
+      if (!q) return true;
+      const from = (r.fromCity || "").toLowerCase();
+      const to = (r.toCity || "").toLowerCase();
+      return from.includes(q) || to.includes(q) || `${from} -> ${to}`.includes(q) || `${from} to ${to}`.includes(q);
+    })
+  );
   const totalRoutePages = Math.max(1, Math.ceil(filteredRoutes.length / ROUTES_PER_PAGE));
   const safeRoutePage = Math.min(routePage, totalRoutePages);
   const routeStartIndex = (safeRoutePage - 1) * ROUTES_PER_PAGE;
@@ -826,10 +1050,11 @@ export default function AdminDashboardPage() {
               <form onSubmit={handleSaveSchedule} className="adm-form-grid">
                 <div className="adm-field">
                   <label>Route</label>
-                  <select name="routeId" value={schedForm.routeId} onChange={handleSchedChange}>
-                    <option value="">Select a route</option>
-                    {routes.map(r => <option key={r.id} value={r.id}>{r.fromCity} → {r.toCity}</option>)}
-                  </select>
+                  <RouteSearchSelect
+                    routes={routes}
+                    value={schedForm.routeId}
+                    onChange={(val) => handleSchedChange({ target: { name: "routeId", value: val } })}
+                  />
                 </div>
                 <div className="adm-field">
                   <label>Bus Number</label>
@@ -845,12 +1070,33 @@ export default function AdminDashboardPage() {
                   <input name="departureTime" type="time" value={schedForm.departureTime} onChange={handleSchedChange} />
                 </div>
                 <div className="adm-field">
+                  <label>Arrival Day</label>
+                  <input
+                    name="arrivalDay"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 1 (same day), 2 (2nd day)"
+                    value={schedForm.arrivalDay}
+                    onChange={handleSchedChange}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E" || e.key === ".") {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="adm-field">
                   <label>Arrival Time</label>
                   <input name="arrivalTime" type="time" value={schedForm.arrivalTime} onChange={handleSchedChange} />
                 </div>
-                <div className="adm-field adm-field-full">
-                  <p className="adm-inline-note">Duration will be calculated automatically from departure and arrival time.</p>
-                </div>
+                {calculateScheduleDuration(schedForm.departureTime, schedForm.arrivalTime, schedForm.arrivalDay) && (
+                  <div className="adm-field adm-field-full">
+                    <p className="adm-inline-note">
+                      Calculated Duration: <strong>{calculateScheduleDuration(schedForm.departureTime, schedForm.arrivalTime, schedForm.arrivalDay)}</strong>
+                      {Number(schedForm.arrivalDay) > 1 ? ` (Arrives on Day ${schedForm.arrivalDay})` : " (Same day arrival)"}
+                    </p>
+                  </div>
+                )}
                 <div className="adm-field">
                   <label>Travel Date</label>
                   <input name="travelDate" type="date" value={schedForm.travelDate} onChange={handleSchedChange} min={new Date().toISOString().split("T")[0]} />
@@ -873,60 +1119,56 @@ export default function AdminDashboardPage() {
                   <label>Price per Seat (Rs.)</label>
                   <input name="price" type="number" placeholder="e.g. 500" value={schedForm.price} onChange={handleSchedChange} min="0" />
                 </div>
-                <div className="adm-field adm-field-full">
-                  <label>Boarding Points and Times</label>
-                  {selectedBoardingPoints.length === 0 ? (
-                    <p className="adm-inline-note">Add boarding points to this route first.</p>
-                  ) : (
-                    <div className="adm-stop-grid">
-                      {schedForm.boardingSelections.map((selection) => (
-                        <div key={`boarding-${selection.point}`} className={`adm-stop-card ${selection.enabled ? "active" : ""}`}>
-                          <label className="adm-stop-toggle">
+                {selectedSchedRoute && (
+                  <>
+                    <div className="adm-field adm-field-full">
+                      <label>Boarding Points and Times</label>
+                      <div className="adm-stop-grid">
+                        {schedForm.boardingSelections.map((selection) => (
+                          <div key={`boarding-${selection.point}`} className={`adm-stop-card ${selection.enabled ? "active" : ""}`}>
+                            <label className="adm-stop-toggle">
+                              <input
+                                type="checkbox"
+                                checked={selection.enabled}
+                                onChange={(event) => updateStopSelection("boarding", selection.point, "enabled", event.target.checked)}
+                              />
+                              <span>{selection.point}</span>
+                            </label>
                             <input
-                              type="checkbox"
-                              checked={selection.enabled}
-                              onChange={(event) => updateStopSelection("boarding", selection.point, "enabled", event.target.checked)}
+                              type="time"
+                              value={selection.time}
+                              disabled={!selection.enabled}
+                              onChange={(event) => updateStopSelection("boarding", selection.point, "time", event.target.value)}
                             />
-                            <span>{selection.point}</span>
-                          </label>
-                          <input
-                            type="time"
-                            value={selection.time}
-                            disabled={!selection.enabled}
-                            onChange={(event) => updateStopSelection("boarding", selection.point, "time", event.target.value)}
-                          />
-                        </div>
-                      ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="adm-field adm-field-full">
-                  <label>Dropping Points and Times</label>
-                  {selectedDroppingPoints.length === 0 ? (
-                    <p className="adm-inline-note">Add dropping points to this route first.</p>
-                  ) : (
-                    <div className="adm-stop-grid">
-                      {schedForm.droppingSelections.map((selection) => (
-                        <div key={`dropping-${selection.point}`} className={`adm-stop-card ${selection.enabled ? "active" : ""}`}>
-                          <label className="adm-stop-toggle">
+                    <div className="adm-field adm-field-full">
+                      <label>Dropping Points and Times</label>
+                      <div className="adm-stop-grid">
+                        {schedForm.droppingSelections.map((selection) => (
+                          <div key={`dropping-${selection.point}`} className={`adm-stop-card ${selection.enabled ? "active" : ""}`}>
+                            <label className="adm-stop-toggle">
+                              <input
+                                type="checkbox"
+                                checked={selection.enabled}
+                                onChange={(event) => updateStopSelection("dropping", selection.point, "enabled", event.target.checked)}
+                              />
+                              <span>{selection.point}</span>
+                            </label>
                             <input
-                              type="checkbox"
-                              checked={selection.enabled}
-                              onChange={(event) => updateStopSelection("dropping", selection.point, "enabled", event.target.checked)}
+                              type="time"
+                              value={selection.time}
+                              disabled={!selection.enabled}
+                              onChange={(event) => updateStopSelection("dropping", selection.point, "time", event.target.value)}
                             />
-                            <span>{selection.point}</span>
-                          </label>
-                          <input
-                            type="time"
-                            value={selection.time}
-                            disabled={!selection.enabled}
-                            onChange={(event) => updateStopSelection("dropping", selection.point, "time", event.target.value)}
-                          />
-                        </div>
-                      ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
                 <div className="adm-field adm-field-full adm-form-actions">
                   <button type="submit" className="adm-submit-btn" disabled={schedLoading}>
                     {schedLoading ? "Saving..." : editingSchedId ? "Update Schedule" : "Add Schedule"}
@@ -959,8 +1201,8 @@ export default function AdminDashboardPage() {
                       </td>
                       <td>{s.travelDate}</td>
                       <td>{normalizeTimeValue(s.departureTime) || "—"}</td>
-                      <td>{normalizeTimeValue(s.arrivalTime) || "—"}</td>
-                      <td>{s.duration || "—"}</td>
+                      <td>{normalizeTimeValue(s.arrivalTime) || "—"}{s.arrivalDay && Number(s.arrivalDay) > 1 ? ` (Day ${s.arrivalDay})` : ""}</td>
+                      <td>{calculateScheduleDuration(s.departureTime, s.arrivalTime, s.arrivalDay) || s.duration || "—"}</td>
                       <td>{formatStopsSummary(s.boardingStops)}</td>
                       <td>{formatStopsSummary(s.droppingStops)}</td>
                       <td>{s.totalSeats}</td>
@@ -1083,13 +1325,20 @@ export default function AdminDashboardPage() {
             ) : (
               <>
                 <div className="adm-table-wrap">
-                  <table className="adm-table">
+                  <table className="adm-table adm-routes-table">
+                    <colgroup>
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "29%" }} />
+                      <col style={{ width: "29%" }} />
+                      <col style={{ width: "14%" }} />
+                    </colgroup>
                     <thead>
                       <tr>
                         <th>From</th>
                         <th>To</th>
-                        <th>Boarding Points</th>
-                        <th>Dropping Points</th>
+                        <th className="adm-route-points-col">Boarding Points</th>
+                        <th className="adm-route-points-col">Dropping Points</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -1098,8 +1347,12 @@ export default function AdminDashboardPage() {
                         <tr key={r.id}>
                           <td>{r.fromCity}</td>
                           <td>{r.toCity}</td>
-                          <td>{getRoutePointOptions(r, "boardingPoints").join(", ") || "—"}</td>
-                          <td>{getRoutePointOptions(r, "droppingPoints").join(", ") || "—"}</td>
+                          <td className="adm-route-points-cell">
+                            {getRoutePointOptions(r, "boardingPoints").join(", ") || "—"}
+                          </td>
+                          <td className="adm-route-points-cell">
+                            {getRoutePointOptions(r, "droppingPoints").join(", ") || "—"}
+                          </td>
                           <td>
                             <div className="adm-action-btns">
                               <button className="adm-btn-edit" onClick={() => handleEditRoute(r)}>

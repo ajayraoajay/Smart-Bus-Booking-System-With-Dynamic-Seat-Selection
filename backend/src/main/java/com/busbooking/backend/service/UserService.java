@@ -65,6 +65,9 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         
         if (!user.getPassword().equals(currentPassword)) {
+            if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+                throw new RuntimeException("Current password is incorrect. Forgot your password? Log out and reset it using “Forgot Password” on the login page.");
+            }
             throw new RuntimeException("Current password is incorrect.");
         }
 

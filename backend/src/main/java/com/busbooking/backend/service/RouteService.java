@@ -20,7 +20,7 @@ public class RouteService {
     }
 
     public List<Route> getAllRoutes() {
-        return routeRepository.findAll();
+        return routeRepository.findAllByOrderByIdDesc();
     }
 
     public Route addRoute(Route route) {

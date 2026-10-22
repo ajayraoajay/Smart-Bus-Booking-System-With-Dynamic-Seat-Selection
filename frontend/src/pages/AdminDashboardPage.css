@@ -484,10 +484,154 @@
   font-size: 0.85rem;
 }
 
+/* Route Search Select in Schedule Form */
+.adm-route-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.adm-route-search-input {
+  width: 100%;
+  padding: 0.6rem 2.8rem 0.6rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--input-bg);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.adm-route-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.adm-route-clear-btn {
+  position: absolute;
+  right: 30px;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.adm-route-clear-btn:hover {
+  color: var(--text);
+}
+
+.adm-route-toggle-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.adm-route-search-wrap.open .adm-route-toggle-btn {
+  transform: rotate(180deg);
+  color: #2563eb;
+}
+
+.adm-route-dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.adm-route-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.adm-route-dropdown-item:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+[data-theme="dark"] .adm-route-dropdown-item:hover {
+  background: #273549;
+  color: #60a5fa;
+}
+
+.adm-route-dropdown-item.selected {
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .adm-route-dropdown-item.selected {
+  background: rgba(37, 99, 235, 0.25);
+  color: #93c5fd;
+}
+
+.adm-route-check-mark {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .adm-route-check-mark {
+  color: #60a5fa;
+}
+
+.adm-route-dropdown-empty {
+  padding: 0.85rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text3);
+  text-align: center;
+}
+
 .adm-stop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+@media (max-width: 992px) {
+  .adm-stop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .adm-stop-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .adm-stop-card {
@@ -792,6 +936,50 @@
 
 .adm-search-clear:hover {
   color: var(--text);
+}
+
+/* Route Table Specific Styles */
+.adm-routes-table {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 860px;
+}
+
+.adm-routes-table th:nth-child(1),
+.adm-routes-table td:nth-child(1) {
+  width: 14%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-routes-table th:nth-child(2),
+.adm-routes-table td:nth-child(2) {
+  width: 14%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-routes-table th.adm-route-points-col,
+.adm-routes-table td.adm-route-points-cell {
+  width: 29%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.adm-routes-table th:nth-child(5),
+.adm-routes-table td:nth-child(5) {
+  width: 14%;
+}
+
+.adm-routes-table .adm-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 /* Route Table Pagination */

@@ -19,6 +19,8 @@ public class ScheduleRequest {
     @NotBlank(message = "Departure time is required")
     private String departureTime;
 
+    private Integer arrivalDay = 1;
+
     @NotBlank(message = "Arrival time is required")
     private String arrivalTime;
 
@@ -38,4 +40,12 @@ public class ScheduleRequest {
 
     private List<ScheduleStop> boardingStops;
     private List<ScheduleStop> droppingStops;
+
+    public Integer getArrivalDay() {
+        return (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+    }
+
+    public void setArrivalDay(Integer arrivalDay) {
+        this.arrivalDay = (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+    }
 }

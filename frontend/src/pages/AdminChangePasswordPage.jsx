@@ -86,6 +86,8 @@ export default function AdminChangePasswordPage() {
     setCurrentPw(val);
     if (error === "Please enter your current password." && val) {
       setError("");
+    } else if (error.startsWith("Current password is incorrect.") && val) {
+      setError("");
     } else if (
       error === "New password cannot be the same as your current password. Please choose a different password." &&
       newPw !== val
@@ -174,11 +176,18 @@ export default function AdminChangePasswordPage() {
       setConfirmActive(false);
       setTimeout(() => navigate("/admin/dashboard"), 1800);
     } catch (err) {
-      setError(
+      const serverMsg =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Failed to change password. Please try again."
-      );
+        "Failed to change password. Please try again.";
+
+      if (serverMsg.toLowerCase().includes("current password is incorrect")) {
+        setError(
+          "Current password is incorrect. Forgot your password? Log out and reset it using “Forgot Password” on the login page."
+        );
+      } else {
+        setError(serverMsg);
+      }
     } finally {
       setLoading(false);
     }

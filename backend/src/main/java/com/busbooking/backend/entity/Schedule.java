@@ -42,6 +42,9 @@ public class Schedule {
     @Column(name = "arrival_time")
     private LocalTime arrivalTime;
 
+    @Column(name = "arrival_day")
+    private Integer arrivalDay = 1;
+
     @Column(name = "duration")
     private String duration;
 
@@ -73,4 +76,12 @@ public class Schedule {
     @OneToMany(mappedBy = "schedule")
     @JsonIgnore
     private List<Booking> bookings;
+
+    public Integer getArrivalDay() {
+        return (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+    }
+
+    public void setArrivalDay(Integer arrivalDay) {
+        this.arrivalDay = (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+    }
 }

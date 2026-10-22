@@ -84,12 +84,14 @@ public class ScheduleService {
     private void applyScheduleDetails(Schedule schedule, Route route, ScheduleRequest request) {
         LocalTime departureTime = LocalTime.parse(request.getDepartureTime());
         LocalTime arrivalTime = LocalTime.parse(request.getArrivalTime());
+        Integer arrivalDay = (request.getArrivalDay() != null && request.getArrivalDay() >= 1) ? request.getArrivalDay() : 1;
 
         schedule.setRoute(route);
         schedule.setTravelDate(LocalDate.parse(request.getTravelDate()));
         schedule.setDepartureTime(departureTime);
+        schedule.setArrivalDay(arrivalDay);
         schedule.setArrivalTime(arrivalTime);
-        schedule.setDuration(formatDuration(departureTime, arrivalTime));
+        schedule.setDuration(formatDuration(departureTime, arrivalTime, arrivalDay));
         schedule.setBusNumber(request.getBusNumber().trim());
         schedule.setTotalSeats(request.getTotalSeats());
         schedule.setBusType(normalizeBusType(request.getBusType()));
@@ -159,7 +161,7 @@ public class ScheduleService {
             boolean updated = false;
 
             if (schedule.getDepartureTime() != null && schedule.getArrivalTime() != null) {
-                String computedDuration = formatDuration(schedule.getDepartureTime(), schedule.getArrivalTime());
+                String computedDuration = formatDuration(schedule.getDepartureTime(), schedule.getArrivalTime(), schedule.getArrivalDay());
                 if (!computedDuration.equals(schedule.getDuration())) {
                     schedule.setDuration(computedDuration);
                     updated = true;
@@ -192,14 +194,26 @@ public class ScheduleService {
         return "sleeper".equals(busType.trim().toLowerCase(Locale.ROOT)) ? "Sleeper" : "Seater";
     }
 
-    private String formatDuration(LocalTime departureTime, LocalTime arrivalTime) {
+    private String formatDuration(LocalTime departureTime, LocalTime arrivalTime, Integer arrivalDay) {
         if (departureTime == null || arrivalTime == null) {
             return "";
         }
 
-        long minutes = Duration.between(departureTime, arrivalTime).toMinutes();
+        int day = (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+        long depMinutes = departureTime.getHour() * 60L + departureTime.getMinute();
+        long arrMinutes = arrivalTime.getHour() * 60L + arrivalTime.getMinute();
+
+        long minutes;
+        if (day > 1) {
+            minutes = (day - 1) * 24L * 60L + (arrMinutes - depMinutes);
+        } else {
+            minutes = arrMinutes - depMinutes;
+            if (minutes < 0) {
+                minutes += 24 * 60;
+            }
+        }
         if (minutes < 0) {
-            minutes += 24 * 60;
+            minutes = 0;
         }
 
         long hoursPart = minutes / 60;

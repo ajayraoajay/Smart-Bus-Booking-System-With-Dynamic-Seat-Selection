@@ -63,6 +63,39 @@ const getDepartureMinutes = (departureTime) => {
   return (hours * 60) + minutes;
 };
 
+const calculateScheduleDuration = (departureTime, arrivalTime, arrivalDay = 1) => {
+  if (!departureTime || !arrivalTime) return "";
+  const depParts = departureTime.split(":").map(Number);
+  const arrParts = arrivalTime.split(":").map(Number);
+  if (depParts.length < 2 || arrParts.length < 2) return "";
+  const [depH, depM] = depParts;
+  const [arrH, arrM] = arrParts;
+  if (isNaN(depH) || isNaN(depM) || isNaN(arrH) || isNaN(arrM)) return "";
+
+  const day = Math.max(1, parseInt(arrivalDay, 10) || 1);
+  const depMinutes = depH * 60 + depM;
+  const arrMinutes = arrH * 60 + arrM;
+
+  let totalMinutes;
+  if (day > 1) {
+    totalMinutes = (day - 1) * 24 * 60 + (arrMinutes - depMinutes);
+  } else {
+    totalMinutes = arrMinutes - depMinutes;
+    if (totalMinutes < 0) {
+      totalMinutes += 24 * 60;
+    }
+  }
+
+  if (totalMinutes < 0) totalMinutes = 0;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+
+  if (mins === 0) return `${hours}h`;
+  if (hours === 0) return `${mins}m`;
+  return `${hours}h ${mins}m`;
+};
+
 const getScheduleBoardingPoints = (schedule) => {
   if (!schedule) return [];
   if (Array.isArray(schedule.boardingStops) && schedule.boardingStops.length > 0) {
@@ -1018,7 +1051,7 @@ export default function RoutesListingPage() {
                         </div>
                         <div className="rlp-duration-block">
                           <span className="rlp-arrow-line">&rarr;</span>
-                          <span className="rlp-duration-text">{schedule.duration || "-"}</span>
+                          <span className="rlp-duration-text">{calculateScheduleDuration(schedule.departureTime, schedule.arrivalTime, schedule.arrivalDay) || schedule.duration || "-"}</span>
                         </div>
                         <div className="rlp-time-block">
                           <span className="rlp-time">{formatTimeValue(schedule.arrivalTime)}</span>
