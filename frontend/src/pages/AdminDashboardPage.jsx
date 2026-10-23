@@ -14,6 +14,61 @@ const sortBookingsNewestFirst = (bookingList) =>
 const sortRoutesNewestFirst = (routeList) =>
   [...routeList].sort((left, right) => (Number(right.id) || 0) - (Number(left.id) || 0));
 
+export const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+export const getLocalTimeString = (d = new Date()) => {
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+export const checkDepartureTimeValidation = (departureTime, travelDate) => {
+  if (!departureTime || !travelDate) return null;
+  const now = new Date();
+  const todayStr = getLocalDateString(now);
+
+  if (travelDate === todayStr) {
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const minRequiredMinutes = currentMinutes + 15;
+    const currentTimeStr = getLocalTimeString(now);
+
+    if (minRequiredMinutes >= 24 * 60) {
+      return `Departure time cannot be scheduled for today as it must be at least 15 minutes after current time (${currentTimeStr}). Please select tomorrow or a later date.`;
+    }
+
+    const [depH, depM] = departureTime.split(":").map(Number);
+    if (!isNaN(depH) && !isNaN(depM)) {
+      const depMinutes = depH * 60 + depM;
+      if (depMinutes < minRequiredMinutes) {
+        return `Departure time must be at least 15 minutes after current time (${currentTimeStr}) when travel date is today.`;
+      }
+    }
+  }
+
+  return null;
+};
+
+export const getMinArrivalTime = (departureTime) => {
+  if (!departureTime) return "";
+  const parts = departureTime.split(":").map(Number);
+  if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return "";
+  let [hours, minutes] = parts;
+  minutes += 1;
+  if (minutes >= 60) {
+    minutes = 0;
+    hours += 1;
+  }
+  if (hours >= 24) {
+    return "23:59";
+  }
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
 export const calculateScheduleDuration = (departureTime, arrivalTime, arrivalDay = 1) => {
   if (!departureTime || !arrivalTime) return "";
   const depParts = departureTime.split(":").map(Number);
@@ -31,13 +86,13 @@ export const calculateScheduleDuration = (departureTime, arrivalTime, arrivalDay
   if (day > 1) {
     totalMinutes = (day - 1) * 24 * 60 + (arrMinutes - depMinutes);
   } else {
-    totalMinutes = arrMinutes - depMinutes;
-    if (totalMinutes < 0) {
-      totalMinutes += 24 * 60;
+    if (arrMinutes <= depMinutes) {
+      return "";
     }
+    totalMinutes = arrMinutes - depMinutes;
   }
 
-  if (totalMinutes < 0) totalMinutes = 0;
+  if (totalMinutes <= 0) return "";
 
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
@@ -309,10 +364,21 @@ export default function AdminDashboardPage() {
 
   
   const [schedForm, setSchedForm] = useState(createEmptyScheduleForm);
-  const [editingSchedId, setEditingSchedId] = useState(null);
   const [schedMsg, setSchedMsg] = useState("");
   const [schedErr, setSchedErr] = useState("");
   const [schedLoading, setSchedLoading] = useState(false);
+  const [confirmSchedModal, setConfirmSchedModal] = useState(null);
+  const [priceEditModal, setPriceEditModal] = useState(null);
+  const [priceEditLoading, setPriceEditLoading] = useState(false);
+  const [priceEditErr, setPriceEditErr] = useState("");
+
+  useEffect(() => {
+    if (!schedMsg) return;
+    const timer = setTimeout(() => {
+      setSchedMsg("");
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [schedMsg]);
 
   
   const [routeForm, setRouteForm] = useState(createEmptyRouteForm);
@@ -420,6 +486,104 @@ export default function AdminDashboardPage() {
 
   const handleSchedChange = (e) => {
     const { name, value } = e.target;
+    const todayStr = getLocalDateString();
+
+    // Dynamic error clearing when condition is satisfied (matching routes tab behavior)
+    if (schedErr) {
+      let satisfied = false;
+
+      if (name === "routeId") {
+        if (schedErr === "Please select a route." && value) {
+          satisfied = true;
+        }
+      } else if (name === "busNumber") {
+        const trimmed = value.trim();
+        if (schedErr === "Bus number is required." && trimmed) {
+          satisfied = true;
+        } else if (schedErr === "Bus number must be at least 3 characters long." && trimmed.length >= 3) {
+          satisfied = true;
+        }
+      } else if (name === "totalSeats") {
+        const num = Number(value);
+        if (schedErr === "Total seats is required." && value.trim() !== "") {
+          satisfied = true;
+        } else if (
+          schedErr === "Total seats must be at least 1." &&
+          value.trim() !== "" &&
+          !isNaN(num) &&
+          num >= 1 &&
+          Number.isInteger(num)
+        ) {
+          satisfied = true;
+        }
+      } else if (name === "departureTime") {
+        if (schedErr === "Departure time is required." && value) {
+          satisfied = true;
+        } else if (schedErr.includes("Arrival time must be after departure time")) {
+          if (schedForm.arrivalTime && value && schedForm.arrivalTime > value) {
+            satisfied = true;
+          }
+        } else if (
+          schedErr.includes("Departure time must be at least 15 minutes") ||
+          schedErr.includes("Departure time cannot be scheduled for today")
+        ) {
+          const depTimeErr = checkDepartureTimeValidation(value, schedForm.travelDate);
+          if (!depTimeErr) {
+            satisfied = true;
+          }
+        }
+      } else if (name === "arrivalDay") {
+        const dayNum = parseInt(value, 10);
+        if (schedErr === "Arrival day is required." && value.trim() !== "") {
+          satisfied = true;
+        } else if (schedErr === "Arrival day must be 1 or greater." && !isNaN(dayNum) && dayNum >= 1) {
+          satisfied = true;
+        } else if (schedErr.includes("Arrival time must be after departure time")) {
+          if (!isNaN(dayNum) && dayNum > 1) {
+            satisfied = true;
+          }
+        }
+      } else if (name === "arrivalTime") {
+        if (schedErr === "Arrival time is required." && value) {
+          satisfied = true;
+        } else if (schedErr.includes("Arrival time must be after departure time")) {
+          const arrDay = parseInt(schedForm.arrivalDay, 10);
+          if (arrDay > 1 || (schedForm.departureTime && value > schedForm.departureTime)) {
+            satisfied = true;
+          }
+        }
+      } else if (name === "travelDate") {
+        if (schedErr === "Travel date is required." && value) {
+          satisfied = true;
+        } else if (schedErr === "Travel date cannot be in the past." && value >= todayStr) {
+          satisfied = true;
+        } else if (
+          schedErr.includes("Departure time must be at least 15 minutes") ||
+          schedErr.includes("Departure time cannot be scheduled for today")
+        ) {
+          const depTimeErr = checkDepartureTimeValidation(schedForm.departureTime, value);
+          if (!depTimeErr) {
+            satisfied = true;
+          }
+        }
+      } else if (name === "price") {
+        const pNum = Number(value);
+        if (schedErr === "Price per seat is required." && value.trim() !== "") {
+          satisfied = true;
+        } else if (
+          (schedErr === "Price per seat must be 0 or greater." || schedErr === "Price must be 0 or greater.") &&
+          value.trim() !== "" &&
+          !isNaN(pNum) &&
+          pNum >= 0
+        ) {
+          satisfied = true;
+        }
+      }
+
+      if (satisfied) {
+        setSchedErr("");
+      }
+    }
 
     if (name === "routeId") {
       const nextRoute = routes.find((route) => String(route.id) === String(value));
@@ -435,16 +599,94 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    if (name === "departureTime") {
+      if (schedForm.travelDate) {
+        const depTimeErr = checkDepartureTimeValidation(value, schedForm.travelDate);
+        if (depTimeErr) {
+          setSchedErr(depTimeErr);
+        } else if (
+          schedErr &&
+          (schedErr.includes("Departure time must be at least 15 minutes") ||
+            schedErr.includes("Departure time cannot be scheduled for today"))
+        ) {
+          setSchedErr("");
+        }
+      }
+
+      setSchedForm((currentForm) => {
+        let nextArrivalTime = currentForm.arrivalTime;
+        if (!value) {
+          nextArrivalTime = "";
+        } else if (Number(currentForm.arrivalDay) === 1 && nextArrivalTime) {
+          if (nextArrivalTime <= value) {
+            nextArrivalTime = "";
+          }
+        }
+        return {
+          ...currentForm,
+          departureTime: value,
+          arrivalTime: nextArrivalTime,
+        };
+      });
+      return;
+    }
+
     if (name === "arrivalDay") {
       if (value === "") {
-        setSchedForm((currentForm) => ({ ...currentForm, arrivalDay: "" }));
+        setSchedForm((currentForm) => ({ ...currentForm, arrivalDay: "", arrivalTime: "" }));
         return;
       }
       const num = parseInt(value, 10);
       if (isNaN(num) || num < 1) {
+        setSchedForm((currentForm) => ({ ...currentForm, arrivalDay: value, arrivalTime: "" }));
         return;
       }
-      setSchedForm((currentForm) => ({ ...currentForm, arrivalDay: String(num) }));
+      setSchedForm((currentForm) => {
+        let nextArrivalTime = currentForm.arrivalTime;
+        if (num === 1 && currentForm.departureTime && nextArrivalTime) {
+          if (nextArrivalTime <= currentForm.departureTime) {
+            nextArrivalTime = "";
+          }
+        }
+        return {
+          ...currentForm,
+          arrivalDay: String(num),
+          arrivalTime: nextArrivalTime,
+        };
+      });
+      return;
+    }
+
+    if (name === "arrivalTime") {
+      const arrDayNum = parseInt(schedForm.arrivalDay, 10);
+      if (arrDayNum === 1 && schedForm.departureTime && value) {
+        if (value <= schedForm.departureTime) {
+          setSchedErr(`Arrival time must be after departure time (${schedForm.departureTime}) and before 00:00 when arriving on Day 1.`);
+          setSchedForm((currentForm) => ({ ...currentForm, arrivalTime: value }));
+          return;
+        }
+      }
+      if (schedErr && (schedErr === "Arrival time is required." || schedErr.includes("Arrival time must be after departure time"))) {
+        setSchedErr("");
+      }
+      setSchedForm((currentForm) => ({ ...currentForm, arrivalTime: value }));
+      return;
+    }
+
+    if (name === "travelDate") {
+      if (schedForm.departureTime) {
+        const depTimeErr = checkDepartureTimeValidation(schedForm.departureTime, value);
+        if (depTimeErr) {
+          setSchedErr(depTimeErr);
+        } else if (
+          schedErr &&
+          (schedErr.includes("Departure time must be at least 15 minutes") ||
+            schedErr.includes("Departure time cannot be scheduled for today"))
+        ) {
+          setSchedErr("");
+        }
+      }
+      setSchedForm((currentForm) => ({ ...currentForm, travelDate: value }));
       return;
     }
 
@@ -454,9 +696,8 @@ export default function AdminDashboardPage() {
   const updateStopSelection = (type, point, field, value) => {
     const targetKey = type === "boarding" ? "boardingSelections" : "droppingSelections";
 
-    setSchedForm((currentForm) => ({
-      ...currentForm,
-      [targetKey]: currentForm[targetKey].map((selection) => {
+    setSchedForm((currentForm) => {
+      const updatedList = currentForm[targetKey].map((selection) => {
         if (selection.point !== point) {
           return selection;
         }
@@ -473,96 +714,241 @@ export default function AdminDashboardPage() {
           ...selection,
           time: value,
         };
-      }),
-    }));
-  };
+      });
 
-  const handleEditSched = (s) => {
-    const routeBoardingPoints = getRoutePointOptions(s.route, "boardingPoints");
-    const routeDroppingPoints = getRoutePointOptions(s.route, "droppingPoints");
+      // Dynamic error clearing for stop selections
+      if (schedErr) {
+        if (type === "boarding") {
+          const enabledStops = updatedList.filter((s) => s.enabled);
+          if (schedErr === "Please select at least one boarding point." && enabledStops.length > 0) {
+            setSchedErr("");
+          } else if (
+            schedErr === "Please select a time for every chosen boarding point." &&
+            enabledStops.length > 0 &&
+            enabledStops.every((s) => Boolean(s.time))
+          ) {
+            setSchedErr("");
+          }
+        } else if (type === "dropping") {
+          const enabledStops = updatedList.filter((s) => s.enabled);
+          if (schedErr === "Please select at least one dropping point." && enabledStops.length > 0) {
+            setSchedErr("");
+          } else if (
+            schedErr === "Please select a time for every chosen dropping point." &&
+            enabledStops.length > 0 &&
+            enabledStops.every((s) => Boolean(s.time))
+          ) {
+            setSchedErr("");
+          }
+        }
+      }
 
-    setEditingSchedId(s.id);
-    setSchedForm({
-      routeId: s.route?.id ? String(s.route.id) : "",
-      busNumber: s.busNumber,
-      totalSeats: s.totalSeats,
-      acType: s.acType ?? "Non-A/C",
-      busType: s.busType ?? "Seater",
-      departureTime: normalizeTimeValue(s.departureTime),
-      arrivalDay: String(s.arrivalDay && Number(s.arrivalDay) >= 1 ? s.arrivalDay : 1),
-      arrivalTime: normalizeTimeValue(s.arrivalTime),
-      travelDate: s.travelDate,
-      price: s.price ?? "",
-      boardingSelections: buildStopSelections(routeBoardingPoints, s.boardingStops),
-      droppingSelections: buildStopSelections(routeDroppingPoints, s.droppingStops),
+      return {
+        ...currentForm,
+        [targetKey]: updatedList,
+      };
     });
-    setSchedMsg(""); setSchedErr("");
-    document.getElementById("sched-form-top")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleCancelSchedEdit = () => {
-    setEditingSchedId(null);
-    setSchedForm(createEmptyScheduleForm());
-    setSchedMsg(""); setSchedErr("");
+  const handleOpenPriceEdit = (schedule) => {
+    setPriceEditModal({
+      schedule,
+      price: String(schedule.price ?? ""),
+    });
+    setPriceEditErr("");
   };
 
-  const handleSaveSchedule = async (e) => {
+  const handleSavePriceEdit = async () => {
+    if (!priceEditModal) return;
+
+    const priceNum = Number(priceEditModal.price);
+    if (priceEditModal.price === "" || isNaN(priceNum) || priceNum < 0) {
+      setPriceEditErr("Please enter a valid price (0 or greater).");
+      return;
+    }
+
+    setPriceEditLoading(true);
+    setPriceEditErr("");
+    try {
+      const s = priceEditModal.schedule;
+      let updatedSchedule;
+
+      try {
+        const res = await api.patch(`/schedules/${s.id}/price`, { price: priceNum });
+        updatedSchedule = res.data;
+      } catch (patchErr) {
+        // Fallback to PUT /schedules/{id} if server hasn't been restarted with the new endpoint
+        const depTime = normalizeTimeValue(s.departureTime);
+        const arrTime = normalizeTimeValue(s.arrivalTime);
+        let arrivalDay = Number(s.arrivalDay || 1);
+        if (arrivalDay === 1 && depTime && arrTime && arrTime <= depTime) {
+          arrivalDay = 2;
+        }
+
+        const payload = {
+          routeId: Number(s.route?.id),
+          busNumber: s.busNumber,
+          totalSeats: Number(s.totalSeats),
+          acType: s.acType || "Non-A/C",
+          busType: s.busType || "Seater",
+          departureTime: depTime,
+          arrivalDay: arrivalDay,
+          arrivalTime: arrTime,
+          travelDate: s.travelDate,
+          price: priceNum,
+          boardingStops: Array.isArray(s.boardingStops)
+            ? s.boardingStops.map((stop) => ({ point: stop.point, time: normalizeTimeValue(stop.time) }))
+            : [],
+          droppingStops: Array.isArray(s.droppingStops)
+            ? s.droppingStops.map((stop) => ({ point: stop.point, time: normalizeTimeValue(stop.time) }))
+            : [],
+        };
+        const putRes = await api.put(`/schedules/${s.id}`, payload);
+        updatedSchedule = putRes.data;
+      }
+
+      setSchedules((prev) => prev.map((item) => (item.id === updatedSchedule.id ? updatedSchedule : item)));
+      setSchedMsg(`Price updated successfully to Rs. ${priceNum.toLocaleString()}!`);
+      setPriceEditModal(null);
+      document.getElementById("sched-form-top")?.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      setPriceEditErr(err.response?.data?.message || "Failed to update price.");
+    } finally {
+      setPriceEditLoading(false);
+    }
+  };
+
+  const handleSaveSchedule = (e) => {
     e.preventDefault();
-    setSchedErr(""); setSchedMsg("");
+    setSchedErr("");
+    setSchedMsg("");
 
-    if (!schedForm.routeId || !schedForm.busNumber || !schedForm.totalSeats || !schedForm.departureTime || !schedForm.arrivalTime || !schedForm.travelDate || !schedForm.price) {
-      setSchedErr("Please fill in all fields.");
-      return;
-    }
-
+    const todayStr = getLocalDateString();
+    const busNumTrimmed = (schedForm.busNumber || "").trim();
     const arrivalDayNum = parseInt(schedForm.arrivalDay, 10);
-    if (!schedForm.arrivalDay || isNaN(arrivalDayNum) || arrivalDayNum < 1) {
-      setSchedErr("Arrival day must be 1 or greater.");
-      return;
-    }
-
     const boardingStops = toStopPayload(schedForm.boardingSelections);
     const droppingStops = toStopPayload(schedForm.droppingSelections);
-    if (boardingStops.length === 0 || droppingStops.length === 0) {
-      setSchedErr("Please select at least one boarding point and one dropping point.");
+
+    let errorMsg = "";
+    let focusSelector = null;
+
+    if (!schedForm.routeId) {
+      errorMsg = "Please select a route.";
+      focusSelector = ".adm-route-search-input";
+    } else if (!busNumTrimmed) {
+      errorMsg = "Bus number is required.";
+      focusSelector = '[name="busNumber"]';
+    } else if (busNumTrimmed.length < 3) {
+      errorMsg = "Bus number must be at least 3 characters long.";
+      focusSelector = '[name="busNumber"]';
+    } else if (schedForm.totalSeats === "" || schedForm.totalSeats === null || schedForm.totalSeats === undefined) {
+      errorMsg = "Total seats is required.";
+      focusSelector = '[name="totalSeats"]';
+    } else if (isNaN(Number(schedForm.totalSeats)) || Number(schedForm.totalSeats) < 1 || !Number.isInteger(Number(schedForm.totalSeats))) {
+      errorMsg = "Total seats must be at least 1.";
+      focusSelector = '[name="totalSeats"]';
+    } else if (!schedForm.departureTime) {
+      errorMsg = "Departure time is required.";
+      focusSelector = '[name="departureTime"]';
+    } else if (schedForm.arrivalDay === "" || schedForm.arrivalDay === null || schedForm.arrivalDay === undefined) {
+      errorMsg = "Arrival day is required.";
+      focusSelector = '[name="arrivalDay"]';
+    } else if (isNaN(arrivalDayNum) || arrivalDayNum < 1) {
+      errorMsg = "Arrival day must be 1 or greater.";
+      focusSelector = '[name="arrivalDay"]';
+    } else if (!schedForm.arrivalTime) {
+      errorMsg = "Arrival time is required.";
+      focusSelector = '[name="arrivalTime"]';
+    } else if (arrivalDayNum === 1 && schedForm.departureTime && schedForm.arrivalTime <= schedForm.departureTime) {
+      errorMsg = `Arrival time must be after departure time (${schedForm.departureTime}) and before 00:00 when arriving on Day 1.`;
+      focusSelector = '[name="arrivalTime"]';
+    } else if (!schedForm.travelDate) {
+      errorMsg = "Travel date is required.";
+      focusSelector = '[name="travelDate"]';
+    } else if (schedForm.travelDate < todayStr) {
+      errorMsg = "Travel date cannot be in the past.";
+      focusSelector = '[name="travelDate"]';
+    } else if (checkDepartureTimeValidation(schedForm.departureTime, schedForm.travelDate)) {
+      errorMsg = checkDepartureTimeValidation(schedForm.departureTime, schedForm.travelDate);
+      focusSelector = '[name="departureTime"]';
+    } else if (schedForm.price === "" || schedForm.price === null || schedForm.price === undefined) {
+      errorMsg = "Price per seat is required.";
+      focusSelector = '[name="price"]';
+    } else if (isNaN(Number(schedForm.price)) || Number(schedForm.price) < 0) {
+      errorMsg = "Price per seat must be 0 or greater.";
+      focusSelector = '[name="price"]';
+    } else if (boardingStops.length === 0) {
+      errorMsg = "Please select at least one boarding point.";
+    } else if (boardingStops.some((stop) => !stop.time)) {
+      errorMsg = "Please select a time for every chosen boarding point.";
+    } else if (droppingStops.length === 0) {
+      errorMsg = "Please select at least one dropping point.";
+    } else if (droppingStops.some((stop) => !stop.time)) {
+      errorMsg = "Please select a time for every chosen dropping point.";
+    }
+
+    if (errorMsg) {
+      setSchedErr(errorMsg);
+      if (focusSelector) {
+        const el = document.querySelector(focusSelector);
+        if (el) el.focus();
+      } else {
+        document.getElementById("sched-form-top")?.scrollIntoView({ behavior: "smooth" });
+      }
       return;
     }
 
-    if (boardingStops.some((stop) => !stop.time) || droppingStops.some((stop) => !stop.time)) {
-      setSchedErr("Please select a time for every chosen boarding and dropping point.");
+    setConfirmSchedModal({
+      route: selectedSchedRoute,
+      busNumber: busNumTrimmed,
+      totalSeats: Number(schedForm.totalSeats),
+      acType: schedForm.acType,
+      busType: schedForm.busType,
+      departureTime: schedForm.departureTime,
+      arrivalDay: arrivalDayNum,
+      arrivalTime: schedForm.arrivalTime,
+      duration: calculateScheduleDuration(schedForm.departureTime, schedForm.arrivalTime, arrivalDayNum),
+      travelDate: schedForm.travelDate,
+      price: schedForm.price,
+      boardingSelections: schedForm.boardingSelections.filter((s) => s.enabled),
+      droppingSelections: schedForm.droppingSelections.filter((s) => s.enabled),
+    });
+  };
+
+  const handleConfirmAddSchedule = async () => {
+    if (!confirmSchedModal) return;
+
+    const priceNum = Number(confirmSchedModal.price);
+    if (confirmSchedModal.price === "" || isNaN(priceNum) || priceNum < 0) {
+      setSchedErr("Price per seat must be 0 or greater.");
       return;
     }
 
     setSchedLoading(true);
     try {
       const payload = {
-        routeId: Number(schedForm.routeId),
-        busNumber: schedForm.busNumber,
-        totalSeats: Number(schedForm.totalSeats),
-        acType: schedForm.acType,
-        busType: schedForm.busType,
-        departureTime: schedForm.departureTime,
-        arrivalDay: arrivalDayNum,
-        arrivalTime: schedForm.arrivalTime,
-        travelDate: schedForm.travelDate,
-        price: Number(schedForm.price),
-        boardingStops,
-        droppingStops,
+        routeId: Number(confirmSchedModal.route.id),
+        busNumber: confirmSchedModal.busNumber,
+        totalSeats: Number(confirmSchedModal.totalSeats),
+        acType: confirmSchedModal.acType,
+        busType: confirmSchedModal.busType,
+        departureTime: confirmSchedModal.departureTime,
+        arrivalDay: confirmSchedModal.arrivalDay,
+        arrivalTime: confirmSchedModal.arrivalTime,
+        travelDate: confirmSchedModal.travelDate,
+        price: priceNum,
+        boardingStops: toStopPayload(confirmSchedModal.boardingSelections),
+        droppingStops: toStopPayload(confirmSchedModal.droppingSelections),
       };
 
-      if (editingSchedId) {
-        await api.put(`/schedules/${editingSchedId}`, payload);
-        setSchedMsg("Schedule updated successfully!");
-      } else {
-        await api.post("/schedules", payload);
-        setSchedMsg("Schedule added successfully!");
-      }
-
-      setEditingSchedId(null);
+      await api.post("/schedules", payload);
+      setSchedMsg("Schedule added successfully!");
       setSchedForm(createEmptyScheduleForm());
+      setConfirmSchedModal(null);
       await fetchAll();
     } catch (err) {
-      setSchedErr(err.response?.data?.message || "Failed to save schedule.");
+      setSchedErr(err.response?.data?.message || "Failed to add schedule.");
+      setConfirmSchedModal(null);
     } finally {
       setSchedLoading(false);
     }
@@ -1044,7 +1430,7 @@ export default function AdminDashboardPage() {
 
             
             <div className="adm-form-card" id="sched-form-top">
-              <h3 className="adm-form-title">{editingSchedId ? "✏️ Edit Schedule" : "➕ Add New Schedule"}</h3>
+              <h3 className="adm-form-title">➕ Add New Schedule</h3>
               {schedErr && <div className="adm-form-error">⚠️ {schedErr}</div>}
               {schedMsg && <div className="adm-form-success">✅ {schedMsg}</div>}
               <form onSubmit={handleSaveSchedule} className="adm-form-grid">
@@ -1087,19 +1473,19 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="adm-field">
                   <label>Arrival Time</label>
-                  <input name="arrivalTime" type="time" value={schedForm.arrivalTime} onChange={handleSchedChange} />
+                  <input
+                    name="arrivalTime"
+                    type="time"
+                    value={schedForm.arrivalTime}
+                    onChange={handleSchedChange}
+                    disabled={!schedForm.departureTime || !schedForm.arrivalDay}
+                    min={Number(schedForm.arrivalDay) === 1 && schedForm.departureTime ? getMinArrivalTime(schedForm.departureTime) : undefined}
+                    max={Number(schedForm.arrivalDay) === 1 ? "23:59" : undefined}
+                  />
                 </div>
-                {calculateScheduleDuration(schedForm.departureTime, schedForm.arrivalTime, schedForm.arrivalDay) && (
-                  <div className="adm-field adm-field-full">
-                    <p className="adm-inline-note">
-                      Calculated Duration: <strong>{calculateScheduleDuration(schedForm.departureTime, schedForm.arrivalTime, schedForm.arrivalDay)}</strong>
-                      {Number(schedForm.arrivalDay) > 1 ? ` (Arrives on Day ${schedForm.arrivalDay})` : " (Same day arrival)"}
-                    </p>
-                  </div>
-                )}
                 <div className="adm-field">
                   <label>Travel Date</label>
-                  <input name="travelDate" type="date" value={schedForm.travelDate} onChange={handleSchedChange} min={new Date().toISOString().split("T")[0]} />
+                  <input name="travelDate" type="date" value={schedForm.travelDate} onChange={handleSchedChange} min={getLocalDateString()} />
                 </div>
                 <div className="adm-field">
                   <label>A/C Type</label>
@@ -1171,11 +1557,8 @@ export default function AdminDashboardPage() {
                 )}
                 <div className="adm-field adm-field-full adm-form-actions">
                   <button type="submit" className="adm-submit-btn" disabled={schedLoading}>
-                    {schedLoading ? "Saving..." : editingSchedId ? "Update Schedule" : "Add Schedule"}
+                    {schedLoading ? "Saving..." : "Add Schedule"}
                   </button>
-                  {editingSchedId && (
-                    <button type="button" className="adm-cancel-edit-btn" onClick={handleCancelSchedEdit}>Cancel Edit</button>
-                  )}
                 </div>
               </form>
             </div>
@@ -1209,7 +1592,7 @@ export default function AdminDashboardPage() {
                       <td><strong>Rs. {(s.price ?? 0).toLocaleString()}</strong></td>
                       <td>
                         <div className="adm-action-btns">
-                          <button className="adm-btn-edit" onClick={() => handleEditSched(s)}>Edit</button>
+                          <button className="adm-btn-edit" onClick={() => handleOpenPriceEdit(s)} title="Edit price">Edit</button>
                           <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.busNumber} on ${s.travelDate}` })}>Delete</button>
                         </div>
                       </td>
@@ -1476,6 +1859,196 @@ export default function AdminDashboardPage() {
         booking={ticketModalBooking}
         onClose={() => setTicketModalBooking(null)}
       />
+
+      {confirmSchedModal && (
+        <div className="adm-modal-overlay" onClick={() => !schedLoading && setConfirmSchedModal(null)}>
+          <div className="adm-review-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="adm-review-modal-header">
+              <h3>📋 Review Schedule Details</h3>
+            </div>
+
+            <div className="adm-modal-notice-banner">
+              ⚠️ Please make sure all the schedule details are correct. Only the price is editable.
+            </div>
+
+            <div className="adm-review-details-grid">
+              <div className="adm-review-detail-item full-width">
+                <span className="adm-review-detail-label">Route</span>
+                <span className="adm-review-detail-val">
+                  {confirmSchedModal.route ? `${confirmSchedModal.route.fromCity} → ${confirmSchedModal.route.toCity}` : "—"}
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Bus Number</span>
+                <span className="adm-review-detail-val">{confirmSchedModal.busNumber}</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Total Seats</span>
+                <span className="adm-review-detail-val">{confirmSchedModal.totalSeats} seats</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Travel Date</span>
+                <span className="adm-review-detail-val">{confirmSchedModal.travelDate}</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Bus Type & A/C</span>
+                <span className="adm-review-detail-val">
+                  {confirmSchedModal.acType} • {confirmSchedModal.busType}
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Departure Time</span>
+                <span className="adm-review-detail-val">{confirmSchedModal.departureTime}</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Arrival Time</span>
+                <span className="adm-review-detail-val">
+                  {confirmSchedModal.arrivalTime} {Number(confirmSchedModal.arrivalDay) > 1 ? `(Day ${confirmSchedModal.arrivalDay})` : "(Same Day)"}
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item full-width">
+                <span className="adm-review-detail-label">Calculated Duration</span>
+                <span className="adm-review-detail-val">
+                  {confirmSchedModal.duration || calculateScheduleDuration(confirmSchedModal.departureTime, confirmSchedModal.arrivalTime, confirmSchedModal.arrivalDay) || "—"}
+                </span>
+              </div>
+            </div>
+
+            {confirmSchedModal.boardingSelections?.length > 0 && (
+              <div className="adm-review-stops-group">
+                <h4>Boarding Points & Times</h4>
+                <div className="adm-review-stops-list">
+                  {confirmSchedModal.boardingSelections.map((stop) => (
+                    <span key={`review-b-${stop.point}`} className="adm-review-stop-pill">
+                      📍 {stop.point}: <strong>{stop.time}</strong>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {confirmSchedModal.droppingSelections?.length > 0 && (
+              <div className="adm-review-stops-group">
+                <h4>Dropping Points & Times</h4>
+                <div className="adm-review-stops-list">
+                  {confirmSchedModal.droppingSelections.map((stop) => (
+                    <span key={`review-d-${stop.point}`} className="adm-review-stop-pill">
+                      🏁 {stop.point}: <strong>{stop.time}</strong>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="adm-review-price-box">
+              <label>
+                <span>Price per Seat (Rs.)</span>
+                <span className="adm-review-editable-badge">Editable</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={confirmSchedModal.price}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (!isNaN(val) && Number(val) >= 0)) {
+                    setConfirmSchedModal((prev) => ({ ...prev, price: val }));
+                  }
+                }}
+                placeholder="Enter price per seat"
+              />
+            </div>
+
+            <div className="adm-review-modal-actions">
+              <button
+                type="button"
+                className="adm-modal-cancel"
+                onClick={() => setConfirmSchedModal(null)}
+                disabled={schedLoading}
+              >
+                Back to Form
+              </button>
+              <button
+                type="button"
+                className="adm-review-save-btn"
+                onClick={handleConfirmAddSchedule}
+                disabled={schedLoading}
+              >
+                {schedLoading ? "Saving..." : "Confirm & Add Schedule"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {priceEditModal && (
+        <div className="adm-modal-overlay" onClick={() => !priceEditLoading && setPriceEditModal(null)}>
+          <div className="adm-edit-price-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>✏️ Edit Schedule Price</h3>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.88rem", color: "var(--text3)" }}>
+              Update the price per seat for this schedule. Only price is editable.
+            </p>
+
+            {priceEditErr && <div className="adm-form-error" style={{ marginBottom: "1rem" }}>⚠️ {priceEditErr}</div>}
+
+            <div className="adm-edit-price-info">
+              <div><strong>Route:</strong> {priceEditModal.schedule.route ? `${priceEditModal.schedule.route.fromCity} → ${priceEditModal.schedule.route.toCity}` : "—"}</div>
+              <div><strong>Bus:</strong> {priceEditModal.schedule.busNumber} ({priceEditModal.schedule.acType || "Non-A/C"} • {priceEditModal.schedule.busType || "Seater"})</div>
+              <div><strong>Travel Date:</strong> {priceEditModal.schedule.travelDate}</div>
+              <div><strong>Timing:</strong> {priceEditModal.schedule.departureTime} → {priceEditModal.schedule.arrivalTime}</div>
+            </div>
+
+            <div className="adm-edit-price-field">
+              <label>Price per Seat (Rs.)</label>
+              <input
+                type="number"
+                min="0"
+                autoFocus
+                value={priceEditModal.price}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (!isNaN(val) && Number(val) >= 0)) {
+                    setPriceEditModal((prev) => ({ ...prev, price: val }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSavePriceEdit();
+                  }
+                }}
+                placeholder="Enter new price"
+              />
+            </div>
+
+            <div className="adm-review-modal-actions">
+              <button
+                type="button"
+                className="adm-modal-cancel"
+                onClick={() => setPriceEditModal(null)}
+                disabled={priceEditLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="adm-review-save-btn"
+                onClick={handleSavePriceEdit}
+                disabled={priceEditLoading}
+              >
+                {priceEditLoading ? "Updating..." : "Update Price"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

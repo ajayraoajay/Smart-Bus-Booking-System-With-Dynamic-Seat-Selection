@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/schedules")
@@ -36,6 +37,21 @@ public class ScheduleController {
     @PutMapping("/{id}")
     public Schedule updateSchedule(@PathVariable Long id, @Valid @RequestBody ScheduleRequest scheduleRequest) {
         return scheduleService.updateSchedule(id, scheduleRequest);
+    }
+
+    @PatchMapping("/{id}/price")
+    public Schedule updateSchedulePrice(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        Object rawPrice = payload.get("price");
+        if (rawPrice == null) {
+            throw new IllegalArgumentException("Price is required.");
+        }
+        int price = Integer.parseInt(rawPrice.toString().trim());
+        return scheduleService.updateSchedulePrice(id, price);
+    }
+
+    @PutMapping("/{id}/price")
+    public Schedule updateSchedulePricePut(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        return updateSchedulePrice(id, payload);
     }
 
     @DeleteMapping("/{id}")

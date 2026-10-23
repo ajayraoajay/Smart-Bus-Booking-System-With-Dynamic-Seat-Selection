@@ -80,13 +80,13 @@ const calculateScheduleDuration = (departureTime, arrivalTime, arrivalDay = 1) =
   if (day > 1) {
     totalMinutes = (day - 1) * 24 * 60 + (arrMinutes - depMinutes);
   } else {
-    totalMinutes = arrMinutes - depMinutes;
-    if (totalMinutes < 0) {
-      totalMinutes += 24 * 60;
+    if (arrMinutes <= depMinutes) {
+      return "";
     }
+    totalMinutes = arrMinutes - depMinutes;
   }
 
-  if (totalMinutes < 0) totalMinutes = 0;
+  if (totalMinutes <= 0) return "";
 
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;

@@ -75,6 +75,16 @@ public class ScheduleService {
         return scheduleRepository.save(schedule);
     }
 
+    public Schedule updateSchedulePrice(Long id, Integer price) {
+        if (price == null || price < 0) {
+            throw new IllegalArgumentException("Price must be 0 or greater.");
+        }
+        Schedule schedule = scheduleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found."));
+        schedule.setPrice(price);
+        return scheduleRepository.save(schedule);
+    }
+
     public void deleteSchedule(Long id) {
         Schedule schedule = scheduleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found."));
@@ -85,6 +95,10 @@ public class ScheduleService {
         LocalTime departureTime = LocalTime.parse(request.getDepartureTime());
         LocalTime arrivalTime = LocalTime.parse(request.getArrivalTime());
         Integer arrivalDay = (request.getArrivalDay() != null && request.getArrivalDay() >= 1) ? request.getArrivalDay() : 1;
+
+        if (arrivalDay == 1 && !arrivalTime.isAfter(departureTime)) {
+            throw new IllegalArgumentException("Arrival time must be after departure time and before 00:00 when arriving on Day 1.");
+        }
 
         schedule.setRoute(route);
         schedule.setTravelDate(LocalDate.parse(request.getTravelDate()));
@@ -207,13 +221,13 @@ public class ScheduleService {
         if (day > 1) {
             minutes = (day - 1) * 24L * 60L + (arrMinutes - depMinutes);
         } else {
-            minutes = arrMinutes - depMinutes;
-            if (minutes < 0) {
-                minutes += 24 * 60;
+            if (arrMinutes <= depMinutes) {
+                return "";
             }
+            minutes = arrMinutes - depMinutes;
         }
-        if (minutes < 0) {
-            minutes = 0;
+        if (minutes <= 0) {
+            return "";
         }
 
         long hoursPart = minutes / 60;

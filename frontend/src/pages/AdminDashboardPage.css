@@ -469,6 +469,17 @@
   transition: border-color 0.2s;
 }
 
+.adm-field input:disabled,
+.adm-field textarea:disabled,
+.adm-field select:disabled,
+.form-group input:disabled,
+.form-group select:disabled {
+  background: var(--bg-card-muted, rgba(148, 163, 184, 0.12));
+  cursor: not-allowed;
+  opacity: 0.65;
+  border-color: var(--border);
+}
+
 .adm-field input:focus,
 .adm-field textarea:focus,
 .adm-field select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
@@ -723,6 +734,254 @@
   border-radius: 10px; cursor: pointer; transition: background 0.2s;
 }
 .adm-modal-confirm:hover { background: #b91c1c; }
+
+/* Review Schedule Details Modal */
+.adm-review-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.75rem 2rem;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  text-align: left;
+}
+
+.adm-review-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.adm-review-modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.adm-modal-notice-banner {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-left: 4px solid #2563eb;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  line-height: 1.45;
+}
+
+.adm-review-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1.25rem;
+  background: var(--surface2, rgba(148, 163, 184, 0.05));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.adm-review-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-review-detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.adm-review-detail-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+}
+
+.adm-review-detail-val {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.adm-review-stops-group {
+  margin-bottom: 1rem;
+}
+
+.adm-review-stops-group h4 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text2);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.adm-review-stops-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.adm-review-stop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.75rem;
+  background: var(--input-bg, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.adm-review-stop-pill strong {
+  color: #2563eb;
+}
+
+.adm-review-price-box {
+  background: rgba(37, 99, 235, 0.06);
+  border: 1.5px solid #2563eb;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.adm-review-price-box label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.adm-review-editable-badge {
+  background: #2563eb;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.adm-review-price-box input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: var(--surface);
+  outline: none;
+  font-family: inherit;
+}
+
+.adm-review-price-box input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.adm-review-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.adm-review-save-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.adm-review-save-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.adm-review-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Edit Price Modal */
+.adm-edit-price-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  text-align: left;
+}
+
+.adm-edit-price-modal h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+
+.adm-edit-price-info {
+  background: var(--surface2, rgba(148, 163, 184, 0.05));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.88rem;
+  color: var(--text2);
+}
+
+.adm-edit-price-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.adm-edit-price-field label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.adm-edit-price-field input {
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: var(--input-bg, var(--surface));
+  outline: none;
+  font-family: inherit;
+}
+
+.adm-edit-price-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
 
 
 .adm-loading { display: flex; align-items: center; gap: 1rem; padding: 3rem; color: var(--text3); justify-content: center; }
