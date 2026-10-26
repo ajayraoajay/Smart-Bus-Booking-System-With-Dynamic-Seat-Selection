@@ -71,14 +71,20 @@ public class GlobalExceptionHandler {
 
     
     private String extractDuplicateMessage(String msg) {
-        if (msg == null) return "Duplicate entry — record already exists.";
+        if (msg == null) return "Database integrity error: unable to complete operation.";
         String lower = msg.toLowerCase();
         if (lower.contains("unique_phone") || lower.contains("phone")) {
             return "Phone number already registered.";
         }
-        if (lower.contains("email")) {
+        if (lower.contains("unique_email") || lower.contains("email")) {
             return "Email already registered.";
         }
-        return "Duplicate entry — this record already exists.";
+        if (lower.contains("foreign key") || lower.contains("cannot delete or update a parent row") || lower.contains("constraint fails")) {
+            return "Cannot delete this record because it is referenced by other items.";
+        }
+        if (lower.contains("duplicate entry")) {
+            return "Duplicate entry — this record already exists.";
+        }
+        return "Database integrity error: unable to complete operation.";
     }
 }

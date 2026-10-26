@@ -13,9 +13,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,9 @@ public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "schedule_id", unique = true)
+    private String scheduleId;
 
     @ManyToOne
     @JoinColumn(name = "route_id", nullable = false)
@@ -83,5 +88,31 @@ public class Schedule {
 
     public void setArrivalDay(Integer arrivalDay) {
         this.arrivalDay = (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+    }
+
+    @Transient
+    public String getStatus() {
+        if (travelDate == null || departureTime == null) {
+            return "Scheduled";
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime depDateTime = travelDate.atTime(departureTime);
+        if (arrivalTime == null) {
+            return now.isBefore(depDateTime) ? "Scheduled" : "Completed";
+        }
+
+        int day = (arrivalDay != null && arrivalDay >= 1) ? arrivalDay : 1;
+        LocalDateTime arrDateTime = travelDate.plusDays(day - 1).atTime(arrivalTime);
+        if (day == 1 && !arrivalTime.isAfter(departureTime)) {
+            arrDateTime = arrDateTime.plusDays(1);
+        }
+
+        if (now.isBefore(depDateTime)) {
+            return "Scheduled";
+        } else if (now.isBefore(arrDateTime)) {
+            return "Ongoing";
+        } else {
+            return "Completed";
+        }
     }
 }

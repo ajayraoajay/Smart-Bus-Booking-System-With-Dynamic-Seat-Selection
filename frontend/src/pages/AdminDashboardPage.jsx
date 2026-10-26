@@ -102,6 +102,53 @@ export const calculateScheduleDuration = (departureTime, arrivalTime, arrivalDay
   return `${hours}h ${mins}m`;
 };
 
+export const getScheduleStatus = (schedule, now = new Date()) => {
+  if (!schedule || !schedule.travelDate || !schedule.departureTime) {
+    return "Scheduled";
+  }
+
+  const dateParts = String(schedule.travelDate).split("-").map(Number);
+  if (dateParts.length < 3 || dateParts.some(isNaN)) {
+    return "Scheduled";
+  }
+  const [y, m, d] = dateParts;
+
+  const depParts = String(schedule.departureTime).split(":").map(Number);
+  if (depParts.length < 2 || depParts.some(isNaN)) {
+    return "Scheduled";
+  }
+  const [depH, depM] = depParts;
+  const depDateTime = new Date(y, m - 1, d, depH, depM, 0, 0);
+
+  if (now.getTime() < depDateTime.getTime()) {
+    return "Scheduled";
+  }
+
+  if (!schedule.arrivalTime) {
+    return "Completed";
+  }
+
+  const arrParts = String(schedule.arrivalTime).split(":").map(Number);
+  if (arrParts.length < 2 || arrParts.some(isNaN)) {
+    return "Completed";
+  }
+  const [arrH, arrM] = arrParts;
+
+  let arrivalDay = parseInt(schedule.arrivalDay, 10) || 1;
+  let dayOffset = Math.max(0, arrivalDay - 1);
+  if (dayOffset === 0 && (arrH < depH || (arrH === depH && arrM < depM))) {
+    dayOffset = 1;
+  }
+
+  const arrDateTime = new Date(y, m - 1, d + dayOffset, arrH, arrM, 0, 0);
+
+  if (now.getTime() < arrDateTime.getTime()) {
+    return "Ongoing";
+  } else {
+    return "Completed";
+  }
+};
+
 const createEmptyScheduleForm = () => ({
   routeId: "",
   busNumber: "",
@@ -379,6 +426,12 @@ export default function AdminDashboardPage() {
     }, 4000);
     return () => clearTimeout(timer);
   }, [schedMsg]);
+
+  const [, setCurrentTick] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTick(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   
   const [routeForm, setRouteForm] = useState(createEmptyRouteForm);
@@ -751,6 +804,11 @@ export default function AdminDashboardPage() {
   };
 
   const handleOpenPriceEdit = (schedule) => {
+    const status = getScheduleStatus(schedule);
+    if (status !== "Scheduled") {
+      setSchedErr(`Cannot edit price for an ${status.toLowerCase()} schedule.`);
+      return;
+    }
     setPriceEditModal({
       schedule,
       price: String(schedule.price ?? ""),
@@ -760,6 +818,12 @@ export default function AdminDashboardPage() {
 
   const handleSavePriceEdit = async () => {
     if (!priceEditModal) return;
+
+    const currentStatus = getScheduleStatus(priceEditModal.schedule);
+    if (currentStatus !== "Scheduled") {
+      setPriceEditErr(`Cannot edit price for an ${currentStatus.toLowerCase()} schedule.`);
+      return;
+    }
 
     const priceNum = Number(priceEditModal.price);
     if (priceEditModal.price === "" || isNaN(priceNum) || priceNum < 0) {
@@ -958,9 +1022,14 @@ export default function AdminDashboardPage() {
     try {
       await api.delete(`/schedules/${id}`);
       setDeleteModal(null);
+      setSchedMsg("Schedule deleted successfully!");
+      setSchedErr("");
+      document.getElementById("sched-form-top")?.scrollIntoView({ behavior: "smooth" });
       await fetchAll();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete schedule.");
+      setDeleteModal(null);
+      setSchedErr(err.response?.data?.message || "Failed to delete schedule.");
+      document.getElementById("sched-form-top")?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -1204,9 +1273,21 @@ export default function AdminDashboardPage() {
     try {
       await api.delete(`/routes/${id}`);
       setDeleteModal(null);
+      if (editingRouteId === id) {
+        setEditingRouteId(null);
+        setRouteForm(createEmptyRouteForm());
+      }
+      if (String(schedForm.routeId) === String(id)) {
+        setSchedForm(createEmptyScheduleForm());
+      }
+      setRouteMsg("Route deleted successfully!");
+      setRouteErr("");
+      document.getElementById("route-form-top")?.scrollIntoView({ behavior: "smooth" });
       await fetchAll();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete route.");
+      setDeleteModal(null);
+      setRouteErr(err.response?.data?.message || "Failed to delete route.");
+      document.getElementById("route-form-top")?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -1566,38 +1647,51 @@ export default function AdminDashboardPage() {
             
             <div className="adm-table-wrap">
               <table className="adm-table">
-                <thead><tr><th>Route</th><th>Bus Details</th><th>Travel Date</th><th>Departure</th><th>Arrival</th><th>Duration</th><th>Boarding Stops</th><th>Dropping Stops</th><th>Total Seats</th><th>Price/Seat</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Route</th><th>Schedule ID</th><th>Bus Details</th><th>Travel Date</th><th>Status</th><th>Departure</th><th>Arrival</th><th>Duration</th><th>Boarding Stops</th><th>Dropping Stops</th><th>Total Seats</th><th>Price/Seat</th><th>Actions</th></tr></thead>
                 <tbody>
-                  {schedules.map(s => (
-                    <tr key={s.id}>
-                      <td>{s.route ? `${s.route.fromCity} → ${s.route.toCity}` : "—"}</td>
-                      <td>
-                        <div className="adm-bus-pill-row">
-                          <span className="adm-booking-id">{s.busNumber}</span>
-                          <span className={s.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
-                            {s.acType === "A/C" ? "A/C" : "Non-A/C"}
+                  {schedules.map(s => {
+                    const status = getScheduleStatus(s);
+                    return (
+                      <tr key={s.id}>
+                        <td>{s.route ? `${s.route.fromCity} → ${s.route.toCity}` : "—"}</td>
+                        <td>
+                          <span className="adm-booking-id">{s.scheduleId || "—"}</span>
+                        </td>
+                        <td>
+                          <div className="adm-bus-pill-row">
+                            <span className="adm-booking-id">{s.busNumber}</span>
+                            <span className={s.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
+                              {s.acType === "A/C" ? "A/C" : "Non-A/C"}
+                            </span>
+                            <span className={s.busType === "Sleeper" ? "adm-layout-badge adm-layout-sleeper" : "adm-layout-badge adm-layout-seater"}>
+                              {s.busType || "Seater"}
+                            </span>
+                          </div>
+                        </td>
+                        <td>{s.travelDate}</td>
+                        <td>
+                          <span className={`adm-status adm-status-${status.toLowerCase()}`}>
+                            {status}
                           </span>
-                          <span className={s.busType === "Sleeper" ? "adm-layout-badge adm-layout-sleeper" : "adm-layout-badge adm-layout-seater"}>
-                            {s.busType || "Seater"}
-                          </span>
-                        </div>
-                      </td>
-                      <td>{s.travelDate}</td>
-                      <td>{normalizeTimeValue(s.departureTime) || "—"}</td>
-                      <td>{normalizeTimeValue(s.arrivalTime) || "—"}{s.arrivalDay && Number(s.arrivalDay) > 1 ? ` (Day ${s.arrivalDay})` : ""}</td>
-                      <td>{calculateScheduleDuration(s.departureTime, s.arrivalTime, s.arrivalDay) || s.duration || "—"}</td>
-                      <td>{formatStopsSummary(s.boardingStops)}</td>
-                      <td>{formatStopsSummary(s.droppingStops)}</td>
-                      <td>{s.totalSeats}</td>
-                      <td><strong>Rs. {(s.price ?? 0).toLocaleString()}</strong></td>
-                      <td>
-                        <div className="adm-action-btns">
-                          <button className="adm-btn-edit" onClick={() => handleOpenPriceEdit(s)} title="Edit price">Edit</button>
-                          <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.busNumber} on ${s.travelDate}` })}>Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>{normalizeTimeValue(s.departureTime) || "—"}</td>
+                        <td>{normalizeTimeValue(s.arrivalTime) || "—"}{s.arrivalDay && Number(s.arrivalDay) > 1 ? ` (Day ${s.arrivalDay})` : ""}</td>
+                        <td>{calculateScheduleDuration(s.departureTime, s.arrivalTime, s.arrivalDay) || s.duration || "—"}</td>
+                        <td>{formatStopsSummary(s.boardingStops)}</td>
+                        <td>{formatStopsSummary(s.droppingStops)}</td>
+                        <td>{s.totalSeats}</td>
+                        <td><strong>Rs. {(s.price ?? 0).toLocaleString()}</strong></td>
+                        <td>
+                          <div className="adm-action-btns">
+                            {status === "Scheduled" && (
+                              <button className="adm-btn-edit" onClick={() => handleOpenPriceEdit(s)} title="Edit price">Edit</button>
+                            )}
+                            <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.scheduleId ? s.scheduleId + ' (' + s.busNumber + ')' : s.busNumber} on ${s.travelDate}` })}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1999,6 +2093,9 @@ export default function AdminDashboardPage() {
             {priceEditErr && <div className="adm-form-error" style={{ marginBottom: "1rem" }}>⚠️ {priceEditErr}</div>}
 
             <div className="adm-edit-price-info">
+              {priceEditModal.schedule.scheduleId && (
+                <div><strong>Schedule ID:</strong> <span className="adm-booking-id">{priceEditModal.schedule.scheduleId}</span></div>
+              )}
               <div><strong>Route:</strong> {priceEditModal.schedule.route ? `${priceEditModal.schedule.route.fromCity} → ${priceEditModal.schedule.route.toCity}` : "—"}</div>
               <div><strong>Bus:</strong> {priceEditModal.schedule.busNumber} ({priceEditModal.schedule.acType || "Non-A/C"} • {priceEditModal.schedule.busType || "Seater"})</div>
               <div><strong>Travel Date:</strong> {priceEditModal.schedule.travelDate}</div>

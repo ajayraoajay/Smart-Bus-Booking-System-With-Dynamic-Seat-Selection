@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 public class ScheduleService {
@@ -42,7 +43,12 @@ public class ScheduleService {
         Route route = routeRepository.findById(scheduleRequest.getRouteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found."));
 
+        if (Boolean.FALSE.equals(route.getActive())) {
+            throw new IllegalArgumentException("Cannot create schedule for a deleted route.");
+        }
+
         Schedule schedule = new Schedule();
+        schedule.setScheduleId(generateUniqueScheduleId());
         schedule.setRoute(route);
         schedule.setTravelDate(LocalDate.parse(scheduleRequest.getTravelDate()));
         schedule.setDepartureTime(LocalTime.parse(scheduleRequest.getDepartureTime()));
@@ -63,6 +69,10 @@ public class ScheduleService {
         Route route = routeRepository.findById(scheduleRequest.getRouteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found."));
 
+        if (schedule.getScheduleId() == null || schedule.getScheduleId().isBlank()) {
+            schedule.setScheduleId(generateUniqueScheduleId());
+        }
+
         schedule.setRoute(route);
         schedule.setTravelDate(LocalDate.parse(scheduleRequest.getTravelDate()));
         schedule.setDepartureTime(LocalTime.parse(scheduleRequest.getDepartureTime()));
@@ -81,6 +91,11 @@ public class ScheduleService {
         }
         Schedule schedule = scheduleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found."));
+
+        if (!"Scheduled".equals(schedule.getStatus())) {
+            throw new IllegalArgumentException("Price cannot be edited for an " + schedule.getStatus().toLowerCase() + " schedule.");
+        }
+
         schedule.setPrice(price);
         return scheduleRepository.save(schedule);
     }
@@ -188,6 +203,11 @@ public class ScheduleService {
                 updated = true;
             }
 
+            if (schedule.getScheduleId() == null || schedule.getScheduleId().isBlank()) {
+                schedule.setScheduleId(generateUniqueScheduleId());
+                updated = true;
+            }
+
             if (updated) {
                 updatedSchedules.add(schedule);
             }
@@ -198,6 +218,14 @@ public class ScheduleService {
         }
 
         return schedules;
+    }
+
+    public String generateUniqueScheduleId() {
+        String scheduleId;
+        do {
+            scheduleId = "SCH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        } while (scheduleRepository.existsByScheduleId(scheduleId));
+        return scheduleId;
     }
 
     private String normalizeBusType(String busType) {

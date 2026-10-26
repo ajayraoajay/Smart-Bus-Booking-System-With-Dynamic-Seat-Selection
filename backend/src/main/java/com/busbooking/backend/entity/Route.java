@@ -39,7 +39,8 @@ public class Route {
     @Column(name = "dropping_points", columnDefinition = "TEXT")
     private List<String> droppingPoints = new ArrayList<>();
 
-    
+    @Column(name = "active")
+    private Boolean active = true;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -52,5 +53,8 @@ public class Route {
 
     public int getPrice() { return price; }
     public void setPrice(int price) { this.price = price; }
+
+    public Boolean getActive() { return active != null ? active : true; }
+    public void setActive(Boolean active) { this.active = active != null ? active : true; }
 
 }
