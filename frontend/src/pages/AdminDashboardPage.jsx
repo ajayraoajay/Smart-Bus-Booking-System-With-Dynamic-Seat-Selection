@@ -14,6 +14,9 @@ const sortBookingsNewestFirst = (bookingList) =>
 const sortRoutesNewestFirst = (routeList) =>
   [...routeList].sort((left, right) => (Number(right.id) || 0) - (Number(left.id) || 0));
 
+const sortSchedulesNewestFirst = (scheduleList) =>
+  [...scheduleList].sort((left, right) => (Number(right.id) || 0) - (Number(left.id) || 0));
+
 export const getLocalDateString = (d = new Date()) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -442,6 +445,8 @@ export default function AdminDashboardPage() {
   const [routeFieldErrors, setRouteFieldErrors] = useState({});
   const [routeSearchQuery, setRouteSearchQuery] = useState("");
   const [routePage, setRoutePage] = useState(1);
+  const [scheduleSearchQuery, setScheduleSearchQuery] = useState("");
+  const [schedulePage, setSchedulePage] = useState(1);
 
   useEffect(() => {
     if (!routeMsg) return;
@@ -469,7 +474,7 @@ export default function AdminDashboardPage() {
       ]);
       setBookings(sortBookingsNewestFirst(bRes.data));
       setRoutes(sortRoutesNewestFirst(rRes.data));
-      setSchedules(sRes.data);
+      setSchedules(sortSchedulesNewestFirst(sRes.data));
     } catch (err) {
       setError("Failed to load data.");
     } finally {
@@ -1009,6 +1014,7 @@ export default function AdminDashboardPage() {
       setSchedMsg("Schedule added successfully!");
       setSchedForm(createEmptyScheduleForm());
       setConfirmSchedModal(null);
+      setSchedulePage(1);
       await fetchAll();
     } catch (err) {
       setSchedErr(err.response?.data?.message || "Failed to add schedule.");
@@ -1253,6 +1259,43 @@ export default function AdminDashboardPage() {
       setRouteLoading(false);
     }
   };
+
+  const SCHEDULES_PER_PAGE = 10;
+  const filteredSchedules = sortSchedulesNewestFirst(
+    schedules.filter((s) => {
+      const q = scheduleSearchQuery.trim().toLowerCase();
+      if (!q) return true;
+
+      const from = (s.route?.fromCity || "").toLowerCase();
+      const to = (s.route?.toCity || "").toLowerCase();
+      const routeDisplay = `${from} → ${to}`.toLowerCase();
+      const routeArrow = `${from} -> ${to}`.toLowerCase();
+      const routeTo = `${from} to ${to}`.toLowerCase();
+      const routeMatches =
+        from.includes(q) ||
+        to.includes(q) ||
+        routeDisplay.includes(q) ||
+        routeArrow.includes(q) ||
+        routeTo.includes(q);
+
+      const schedId = (s.scheduleId ? String(s.scheduleId) : "").toLowerCase();
+      const rawId = String(s.id ?? "").toLowerCase();
+      const idMatches = schedId.includes(q) || rawId === q;
+
+      const travelDate = (s.travelDate ? String(s.travelDate) : "").toLowerCase();
+      const dateMatches = travelDate.includes(q);
+
+      const status = getScheduleStatus(s).toLowerCase();
+      const rawStatus = (s.status ? String(s.status) : "").toLowerCase();
+      const statusMatches = status.includes(q) || rawStatus.includes(q);
+
+      return routeMatches || idMatches || dateMatches || statusMatches;
+    })
+  );
+  const totalSchedulePages = Math.max(1, Math.ceil(filteredSchedules.length / SCHEDULES_PER_PAGE));
+  const safeSchedulePage = Math.min(schedulePage, totalSchedulePages);
+  const scheduleStartIndex = (safeSchedulePage - 1) * SCHEDULES_PER_PAGE;
+  const paginatedSchedules = filteredSchedules.slice(scheduleStartIndex, scheduleStartIndex + SCHEDULES_PER_PAGE);
 
   const ROUTES_PER_PAGE = 10;
   const filteredRoutes = sortRoutesNewestFirst(
@@ -1645,56 +1688,152 @@ export default function AdminDashboardPage() {
             </div>
 
             
-            <div className="adm-table-wrap">
-              <table className="adm-table">
-                <thead><tr><th>Route</th><th>Schedule ID</th><th>Bus Details</th><th>Travel Date</th><th>Status</th><th>Departure</th><th>Arrival</th><th>Duration</th><th>Boarding Stops</th><th>Dropping Stops</th><th>Total Seats</th><th>Price/Seat</th><th>Actions</th></tr></thead>
-                <tbody>
-                  {schedules.map(s => {
-                    const status = getScheduleStatus(s);
-                    return (
-                      <tr key={s.id}>
-                        <td>{s.route ? `${s.route.fromCity} → ${s.route.toCity}` : "—"}</td>
-                        <td>
-                          <span className="adm-booking-id">{s.scheduleId || "—"}</span>
-                        </td>
-                        <td>
-                          <div className="adm-bus-pill-row">
-                            <span className="adm-booking-id">{s.busNumber}</span>
-                            <span className={s.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
-                              {s.acType === "A/C" ? "A/C" : "Non-A/C"}
-                            </span>
-                            <span className={s.busType === "Sleeper" ? "adm-layout-badge adm-layout-sleeper" : "adm-layout-badge adm-layout-seater"}>
-                              {s.busType || "Seater"}
-                            </span>
-                          </div>
-                        </td>
-                        <td>{s.travelDate}</td>
-                        <td>
-                          <span className={`adm-status adm-status-${status.toLowerCase()}`}>
-                            {status}
-                          </span>
-                        </td>
-                        <td>{normalizeTimeValue(s.departureTime) || "—"}</td>
-                        <td>{normalizeTimeValue(s.arrivalTime) || "—"}{s.arrivalDay && Number(s.arrivalDay) > 1 ? ` (Day ${s.arrivalDay})` : ""}</td>
-                        <td>{calculateScheduleDuration(s.departureTime, s.arrivalTime, s.arrivalDay) || s.duration || "—"}</td>
-                        <td>{formatStopsSummary(s.boardingStops)}</td>
-                        <td>{formatStopsSummary(s.droppingStops)}</td>
-                        <td>{s.totalSeats}</td>
-                        <td><strong>Rs. {(s.price ?? 0).toLocaleString()}</strong></td>
-                        <td>
-                          <div className="adm-action-btns">
-                            {status === "Scheduled" && (
-                              <button className="adm-btn-edit" onClick={() => handleOpenPriceEdit(s)} title="Edit price">Edit</button>
-                            )}
-                            <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.scheduleId ? s.scheduleId + ' (' + s.busNumber + ')' : s.busNumber} on ${s.travelDate}` })}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* Search Box on top of table */}
+            <div className="adm-search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search schedules by route, schedule ID, travel date, or status..."
+                value={scheduleSearchQuery}
+                onChange={(e) => {
+                  setScheduleSearchQuery(e.target.value);
+                  setSchedulePage(1);
+                }}
+              />
+              {scheduleSearchQuery && (
+                <button
+                  type="button"
+                  className="adm-search-clear"
+                  onClick={() => {
+                    setScheduleSearchQuery("");
+                    setSchedulePage(1);
+                  }}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
+
+            {filteredSchedules.length === 0 ? (
+              <div className="adm-empty">
+                <div className="adm-empty-icon">📅</div>
+                <p>{scheduleSearchQuery ? `No schedules found matching "${scheduleSearchQuery}".` : "No schedules available."}</p>
+              </div>
+            ) : (
+              <>
+                <div className="adm-table-wrap">
+                  <table className="adm-table">
+                    <thead><tr><th>Route</th><th>Schedule ID</th><th>Bus Details</th><th>Travel Date</th><th>Status</th><th>Departure</th><th>Arrival</th><th>Duration</th><th>Boarding Stops</th><th>Dropping Stops</th><th>Total Seats</th><th>Price/Seat</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {paginatedSchedules.map(s => {
+                        const status = getScheduleStatus(s);
+                        return (
+                          <tr key={s.id}>
+                            <td>{s.route ? `${s.route.fromCity} → ${s.route.toCity}` : "—"}</td>
+                            <td>
+                              <span className="adm-booking-id">{s.scheduleId || "—"}</span>
+                            </td>
+                            <td>
+                              <div className="adm-bus-pill-row">
+                                <span className="adm-booking-id">{s.busNumber}</span>
+                                <span className={s.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
+                                  {s.acType === "A/C" ? "A/C" : "Non-A/C"}
+                                </span>
+                                <span className={s.busType === "Sleeper" ? "adm-layout-badge adm-layout-sleeper" : "adm-layout-badge adm-layout-seater"}>
+                                  {s.busType || "Seater"}
+                                </span>
+                              </div>
+                            </td>
+                            <td>{s.travelDate}</td>
+                            <td>
+                              <span className={`adm-status adm-status-${status.toLowerCase()}`}>
+                                {status}
+                              </span>
+                            </td>
+                            <td>{normalizeTimeValue(s.departureTime) || "—"}</td>
+                            <td>{normalizeTimeValue(s.arrivalTime) || "—"}{s.arrivalDay && Number(s.arrivalDay) > 1 ? ` (Day ${s.arrivalDay})` : ""}</td>
+                            <td>{calculateScheduleDuration(s.departureTime, s.arrivalTime, s.arrivalDay) || s.duration || "—"}</td>
+                            <td>{formatStopsSummary(s.boardingStops)}</td>
+                            <td>{formatStopsSummary(s.droppingStops)}</td>
+                            <td>{s.totalSeats}</td>
+                            <td><strong>Rs. {(s.price ?? 0).toLocaleString()}</strong></td>
+                            <td>
+                              <div className="adm-action-btns">
+                                {status === "Scheduled" && (
+                                  <button className="adm-btn-edit" onClick={() => handleOpenPriceEdit(s)} title="Edit price">Edit</button>
+                                )}
+                                <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.scheduleId ? s.scheduleId + ' (' + s.busNumber + ')' : s.busNumber} on ${s.travelDate}` })}>Delete</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination (10 rows per page) */}
+                <div className="adm-pagination">
+                  <div className="adm-pagination-info">
+                    Showing {filteredSchedules.length === 0 ? 0 : scheduleStartIndex + 1} to{" "}
+                    {Math.min(scheduleStartIndex + SCHEDULES_PER_PAGE, filteredSchedules.length)} of {filteredSchedules.length} schedules
+                  </div>
+                  {totalSchedulePages > 1 && (
+                    <div className="adm-pagination-controls">
+                      <button
+                        type="button"
+                        className="adm-page-btn"
+                        disabled={safeSchedulePage <= 1}
+                        onClick={() => setSchedulePage((p) => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </button>
+                      {Array.from({ length: totalSchedulePages }, (_, i) => i + 1).map((p) => {
+                        if (
+                          totalSchedulePages <= 7 ||
+                          p === 1 ||
+                          p === totalSchedulePages ||
+                          Math.abs(p - safeSchedulePage) <= 1
+                        ) {
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              className={`adm-page-btn ${safeSchedulePage === p ? "active" : ""}`}
+                              onClick={() => setSchedulePage(p)}
+                            >
+                              {p}
+                            </button>
+                          );
+                        } else if (
+                          p === safeSchedulePage - 2 ||
+                          p === safeSchedulePage + 2
+                        ) {
+                          return (
+                            <span key={p} className="adm-page-ellipsis">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                      <button
+                        type="button"
+                        className="adm-page-btn"
+                        disabled={safeSchedulePage >= totalSchedulePages}
+                        onClick={() => setSchedulePage((p) => Math.min(totalSchedulePages, p + 1))}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 

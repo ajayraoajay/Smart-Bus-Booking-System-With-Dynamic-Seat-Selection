@@ -16,8 +16,13 @@ function normalizeUser(userData) {
 export function AuthProvider({ children }) {
   
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("busgo_user");
-    return saved ? normalizeUser(JSON.parse(saved)) : null;
+    try {
+      const saved = localStorage.getItem("busgo_user");
+      return saved ? normalizeUser(JSON.parse(saved)) : null;
+    } catch {
+      localStorage.removeItem("busgo_user");
+      return null;
+    }
   });
 
   

@@ -61,8 +61,13 @@ function AppContent() {
 
   // Case 2: Logged-in Admin
   // Admin can navigate between admin panel pages.
+  // When admin navigates to / or /login, redirect to /admin/dashboard.
   // Any navigation to pages NOT in admin panel renders admin navbar + Airtel 404 page.
   if (isAdmin) {
+    if (location.pathname === "/" || location.pathname === "/login") {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+
     if (!location.pathname.startsWith("/admin")) {
       return <NotFoundPage role="admin" />;
     }
@@ -111,6 +116,9 @@ function AppContent() {
   // Case 3: Logged-in User
   // User can navigate to user application pages (home, about, contact, routes-listing, schedules, booking, user panel).
   // Any navigation to pages NOT in user panel (e.g. /admin/*, /login, or invalid routes) renders user navbar + 404 page.
+  if (location.pathname === "/login") {
+    return <Navigate to="/" replace />;
+  }
   const isKnownUserRoute =
     location.pathname === "/" ||
     location.pathname === "/about" ||
