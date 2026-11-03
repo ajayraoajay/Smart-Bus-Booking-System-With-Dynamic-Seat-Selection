@@ -419,6 +419,7 @@ export default function AdminDashboardPage() {
   const [schedLoading, setSchedLoading] = useState(false);
   const [confirmSchedModal, setConfirmSchedModal] = useState(null);
   const [priceEditModal, setPriceEditModal] = useState(null);
+  const [viewDetailsSchedule, setViewDetailsSchedule] = useState(null);
   const [priceEditLoading, setPriceEditLoading] = useState(false);
   const [priceEditErr, setPriceEditErr] = useState("");
 
@@ -877,6 +878,7 @@ export default function AdminDashboardPage() {
       }
 
       setSchedules((prev) => prev.map((item) => (item.id === updatedSchedule.id ? updatedSchedule : item)));
+      setViewDetailsSchedule((prev) => (prev?.id === updatedSchedule.id ? updatedSchedule : prev));
       setSchedMsg(`Price updated successfully to Rs. ${priceNum.toLocaleString()}!`);
       setPriceEditModal(null);
       document.getElementById("sched-form-top")?.scrollIntoView({ behavior: "smooth" });
@@ -1726,27 +1728,26 @@ export default function AdminDashboardPage() {
             ) : (
               <>
                 <div className="adm-table-wrap">
-                  <table className="adm-table">
-                    <thead><tr><th>Route</th><th>Schedule ID</th><th>Bus Details</th><th>Travel Date</th><th>Status</th><th>Departure</th><th>Arrival</th><th>Duration</th><th>Boarding Stops</th><th>Dropping Stops</th><th>Total Seats</th><th>Price/Seat</th><th>Actions</th></tr></thead>
+                  <table className="adm-table adm-schedules-table">
+                    <colgroup>
+                      <col style={{ width: "13%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "11%" }} />
+                      <col style={{ width: "11%" }} />
+                      <col style={{ width: "13%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "16%" }} />
+                    </colgroup>
+                    <thead><tr><th>Route</th><th>Schedule ID</th><th>Travel Date</th><th>Status</th><th>Departure</th><th>Arrival</th><th>Price/Seat</th><th>Actions</th></tr></thead>
                     <tbody>
                       {paginatedSchedules.map(s => {
                         const status = getScheduleStatus(s);
                         return (
                           <tr key={s.id}>
-                            <td>{s.route ? `${s.route.fromCity} → ${s.route.toCity}` : "—"}</td>
+                            <td className="adm-sched-route-cell">{s.route ? `${s.route.fromCity} → ${s.route.toCity}` : "—"}</td>
                             <td>
                               <span className="adm-booking-id">{s.scheduleId || "—"}</span>
-                            </td>
-                            <td>
-                              <div className="adm-bus-pill-row">
-                                <span className="adm-booking-id">{s.busNumber}</span>
-                                <span className={s.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
-                                  {s.acType === "A/C" ? "A/C" : "Non-A/C"}
-                                </span>
-                                <span className={s.busType === "Sleeper" ? "adm-layout-badge adm-layout-sleeper" : "adm-layout-badge adm-layout-seater"}>
-                                  {s.busType || "Seater"}
-                                </span>
-                              </div>
                             </td>
                             <td>{s.travelDate}</td>
                             <td>
@@ -1756,17 +1757,39 @@ export default function AdminDashboardPage() {
                             </td>
                             <td>{normalizeTimeValue(s.departureTime) || "—"}</td>
                             <td>{normalizeTimeValue(s.arrivalTime) || "—"}{s.arrivalDay && Number(s.arrivalDay) > 1 ? ` (Day ${s.arrivalDay})` : ""}</td>
-                            <td>{calculateScheduleDuration(s.departureTime, s.arrivalTime, s.arrivalDay) || s.duration || "—"}</td>
-                            <td>{formatStopsSummary(s.boardingStops)}</td>
-                            <td>{formatStopsSummary(s.droppingStops)}</td>
-                            <td>{s.totalSeats}</td>
                             <td><strong>Rs. {(s.price ?? 0).toLocaleString()}</strong></td>
                             <td>
-                              <div className="adm-action-btns">
-                                {status === "Scheduled" && (
-                                  <button className="adm-btn-edit" onClick={() => handleOpenPriceEdit(s)} title="Edit price">Edit</button>
-                                )}
-                                <button className="adm-btn-delete" onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.scheduleId ? s.scheduleId + ' (' + s.busNumber + ')' : s.busNumber} on ${s.travelDate}` })}>Delete</button>
+                              <div className="adm-sched-actions">
+                                <div className="adm-sched-action-row full-row">
+                                  <button
+                                    type="button"
+                                    className="adm-btn-view"
+                                    onClick={() => setViewDetailsSchedule(s)}
+                                    title="View schedule details"
+                                  >
+                                    View Details
+                                  </button>
+                                </div>
+                                <div className="adm-sched-action-row sub-row">
+                                  {status === "Scheduled" && (
+                                    <button
+                                      type="button"
+                                      className="adm-btn-edit"
+                                      onClick={() => handleOpenPriceEdit(s)}
+                                      title="Edit price"
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="adm-btn-delete"
+                                    onClick={() => setDeleteModal({ type: "schedule", id: s.id, label: `${s.scheduleId ? s.scheduleId + ' (' + s.busNumber + ')' : s.busNumber} on ${s.travelDate}` })}
+                                    title="Delete schedule"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
                               </div>
                             </td>
                           </tr>
@@ -1961,8 +1984,8 @@ export default function AdminDashboardPage() {
                     <tbody>
                       {paginatedRoutes.map((r) => (
                         <tr key={r.id}>
-                          <td>{r.fromCity}</td>
-                          <td>{r.toCity}</td>
+                          <td className="adm-route-city-cell">{r.fromCity}</td>
+                          <td className="adm-route-city-cell">{r.toCity}</td>
                           <td className="adm-route-points-cell">
                             {getRoutePointOptions(r, "boardingPoints").join(", ") || "—"}
                           </td>
@@ -2280,6 +2303,139 @@ export default function AdminDashboardPage() {
                 disabled={priceEditLoading}
               >
                 {priceEditLoading ? "Updating..." : "Update Price"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewDetailsSchedule && (
+        <div className="adm-modal-overlay" onClick={() => setViewDetailsSchedule(null)}>
+          <div className="adm-review-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="adm-review-modal-header">
+              <h3>🚌 Schedule Details</h3>
+              <button
+                type="button"
+                className="adm-modal-close-btn"
+                onClick={() => setViewDetailsSchedule(null)}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="adm-modal-subheading">
+              <span className="adm-booking-id">{viewDetailsSchedule.scheduleId || `SCH-${viewDetailsSchedule.id}`}</span>
+              {viewDetailsSchedule.route && (
+                <span className="adm-detail-route-badge">
+                  {viewDetailsSchedule.route.fromCity} → {viewDetailsSchedule.route.toCity}
+                </span>
+              )}
+              <span className={`adm-status adm-status-${getScheduleStatus(viewDetailsSchedule).toLowerCase()}`}>
+                {getScheduleStatus(viewDetailsSchedule)}
+              </span>
+            </div>
+
+            <div className="adm-review-details-grid">
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Bus Number</span>
+                <span className="adm-review-detail-val">{viewDetailsSchedule.busNumber || "—"}</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">A/C Type</span>
+                <span className="adm-review-detail-val">
+                  <span className={viewDetailsSchedule.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
+                    {viewDetailsSchedule.acType === "A/C" ? "A/C" : "Non-A/C"}
+                  </span>
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Bus Layout</span>
+                <span className="adm-review-detail-val">
+                  <span className={viewDetailsSchedule.busType === "Sleeper" ? "adm-layout-badge adm-layout-sleeper" : "adm-layout-badge adm-layout-seater"}>
+                    {viewDetailsSchedule.busType || "Seater"}
+                  </span>
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Total Seats</span>
+                <span className="adm-review-detail-val">{viewDetailsSchedule.totalSeats || "—"} seats</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Travel Date</span>
+                <span className="adm-review-detail-val">{viewDetailsSchedule.travelDate || "—"}</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Duration</span>
+                <span className="adm-review-detail-val">
+                  ⏱️ {calculateScheduleDuration(viewDetailsSchedule.departureTime, viewDetailsSchedule.arrivalTime, viewDetailsSchedule.arrivalDay) || viewDetailsSchedule.duration || "—"}
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Departure Time</span>
+                <span className="adm-review-detail-val">{normalizeTimeValue(viewDetailsSchedule.departureTime) || "—"}</span>
+              </div>
+
+              <div className="adm-review-detail-item">
+                <span className="adm-review-detail-label">Arrival Time</span>
+                <span className="adm-review-detail-val">
+                  {normalizeTimeValue(viewDetailsSchedule.arrivalTime) || "—"}{viewDetailsSchedule.arrivalDay && Number(viewDetailsSchedule.arrivalDay) > 1 ? ` (Day ${viewDetailsSchedule.arrivalDay})` : ""}
+                </span>
+              </div>
+
+              <div className="adm-review-detail-item full-width">
+                <span className="adm-review-detail-label">Price per Seat</span>
+                <span className="adm-review-detail-val">
+                  <strong style={{ color: "#2563eb", fontSize: "1.05rem" }}>
+                    Rs. {(viewDetailsSchedule.price ?? 0).toLocaleString()}
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="adm-review-stops-group">
+              <h4>Boarding Stops & Times</h4>
+              {Array.isArray(viewDetailsSchedule.boardingStops) && viewDetailsSchedule.boardingStops.length > 0 ? (
+                <div className="adm-review-stops-list">
+                  {viewDetailsSchedule.boardingStops.map((stop, idx) => (
+                    <span key={`b-stop-${idx}`} className="adm-review-stop-pill">
+                      📍 {stop.point}: <strong>{normalizeTimeValue(stop.time) || stop.time || "--:--"}</strong>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="adm-no-stops-text">No boarding stops specified.</p>
+              )}
+            </div>
+
+            <div className="adm-review-stops-group">
+              <h4>Dropping Stops & Times</h4>
+              {Array.isArray(viewDetailsSchedule.droppingStops) && viewDetailsSchedule.droppingStops.length > 0 ? (
+                <div className="adm-review-stops-list">
+                  {viewDetailsSchedule.droppingStops.map((stop, idx) => (
+                    <span key={`d-stop-${idx}`} className="adm-review-stop-pill">
+                      🏁 {stop.point}: <strong>{normalizeTimeValue(stop.time) || stop.time || "--:--"}</strong>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="adm-no-stops-text">No dropping stops specified.</p>
+              )}
+            </div>
+
+            <div className="adm-review-modal-actions" style={{ marginTop: "1.5rem" }}>
+              <button
+                type="button"
+                className="adm-review-save-btn"
+                onClick={() => setViewDetailsSchedule(null)}
+              >
+                Close
               </button>
             </div>
           </div>

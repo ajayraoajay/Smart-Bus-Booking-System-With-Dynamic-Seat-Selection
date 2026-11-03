@@ -199,10 +199,17 @@
   padding: 0.5rem 1.1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.adm-logout-btn:hover { background: #fee2e2; }
+.adm-logout-btn:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
+[data-theme="dark"] .adm-logout-btn:hover {
+  border-color: #ef4444;
+}
 
 
 .adm-body { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
@@ -416,6 +423,90 @@
   font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer;
 }
 .adm-btn-delete:hover { background: #fecaca; }
+
+/* Schedule Actions in Table */
+.adm-sched-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 135px;
+}
+
+.adm-sched-action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.adm-sched-action-row.full-row .adm-btn-view {
+  width: 100%;
+  text-align: center;
+  padding: 5px 8px;
+  box-sizing: border-box;
+}
+
+.adm-sched-action-row.sub-row {
+  display: flex;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.adm-sched-action-row.sub-row .adm-btn-edit,
+.adm-sched-action-row.sub-row .adm-btn-delete {
+  flex: 1;
+  text-align: center;
+  padding: 4px 6px;
+  box-sizing: border-box;
+}
+
+/* Modal Close Button and Badges */
+.adm-modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.adm-modal-close-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.adm-modal-subheading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-detail-route-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface2);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.adm-no-stops-text {
+  font-size: 0.85rem;
+  color: var(--text3);
+  font-style: italic;
+  margin: 0.25rem 0;
+}
 
 .adm-cancel-note {
   color: var(--text3);
@@ -1200,6 +1291,71 @@
   color: var(--text);
 }
 
+/* Schedule Table Specific Styles - Fixed column widths to prevent shifting between pages */
+.adm-schedules-table {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 960px;
+}
+
+.adm-schedules-table th,
+.adm-schedules-table td {
+  vertical-align: middle;
+}
+
+.adm-schedules-table th:nth-child(1),
+.adm-schedules-table td:nth-child(1),
+.adm-schedules-table td.adm-sched-route-cell {
+  width: 13%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
+.adm-schedules-table th:nth-child(2),
+.adm-schedules-table td:nth-child(2) {
+  width: 12%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-schedules-table th:nth-child(3),
+.adm-schedules-table td:nth-child(3) {
+  width: 12%;
+  white-space: nowrap;
+}
+
+.adm-schedules-table th:nth-child(4),
+.adm-schedules-table td:nth-child(4) {
+  width: 11%;
+  white-space: nowrap;
+}
+
+.adm-schedules-table th:nth-child(5),
+.adm-schedules-table td:nth-child(5) {
+  width: 11%;
+  white-space: nowrap;
+}
+
+.adm-schedules-table th:nth-child(6),
+.adm-schedules-table td:nth-child(6) {
+  width: 13%;
+  white-space: nowrap;
+}
+
+.adm-schedules-table th:nth-child(7),
+.adm-schedules-table td:nth-child(7) {
+  width: 12%;
+  white-space: nowrap;
+}
+
+.adm-schedules-table th:nth-child(8),
+.adm-schedules-table td:nth-child(8) {
+  width: 16%;
+}
+
 /* Route Table Specific Styles */
 .adm-routes-table {
   width: 100%;
@@ -1207,20 +1363,21 @@
   min-width: 860px;
 }
 
-.adm-routes-table th:nth-child(1),
-.adm-routes-table td:nth-child(1) {
-  width: 14%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.adm-routes-table th,
+.adm-routes-table td {
+  vertical-align: middle;
 }
 
+.adm-routes-table th:nth-child(1),
+.adm-routes-table td:nth-child(1),
 .adm-routes-table th:nth-child(2),
-.adm-routes-table td:nth-child(2) {
+.adm-routes-table td:nth-child(2),
+.adm-routes-table td.adm-route-city-cell {
   width: 14%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
 }
 
 .adm-routes-table th.adm-route-points-col,
@@ -1416,9 +1573,21 @@
     background: #fef2f2;
   }
 
+  .adm-mobile-menu-item.logout:hover {
+    border-color: #dc2626;
+    color: #dc2626;
+    background: #fee2e2;
+  }
+
   [data-theme="dark"] .adm-mobile-menu-item.logout {
     background: rgba(220, 38, 38, 0.15);
     border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+  }
+
+  [data-theme="dark"] .adm-mobile-menu-item.logout:hover {
+    border-color: #ef4444;
+    background: rgba(220, 38, 38, 0.25);
     color: #fca5a5;
   }
 
