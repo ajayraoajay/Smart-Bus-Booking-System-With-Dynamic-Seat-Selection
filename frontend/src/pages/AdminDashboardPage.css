@@ -476,9 +476,19 @@
   transition: all 0.2s ease;
 }
 
-.adm-modal-close-btn:hover {
-  background: var(--surface2);
-  color: var(--text);
+.adm-modal-close-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+[data-theme="dark"] .adm-modal-close-btn:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
+.adm-modal-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .adm-modal-subheading {
@@ -816,11 +826,36 @@
 .adm-modal-actions { display: flex; gap: 0.75rem; justify-content: center; }
 
 .adm-modal-cancel {
-  flex: 1; background: var(--surface2); border: 1.5px solid var(--border);
-  color: var(--text2); font-size: 0.92rem; font-weight: 600;
-  padding: 0.7rem; border-radius: 10px; cursor: pointer; transition: background 0.2s;
+  flex: 1;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text2);
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0.7rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
 }
-.adm-modal-cancel:hover { background: var(--surface2); }
+
+.adm-modal-cancel:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: #94a3b8;
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .adm-modal-cancel:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #64748b;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.adm-modal-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .adm-modal-confirm {
   flex: 1; background: #dc2626; border: none; color: white;
@@ -992,6 +1027,24 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+}
+
+.adm-review-modal-actions.center {
+  justify-content: center;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.adm-review-modal-actions.center .adm-modal-cancel {
+  flex: 0 0 220px;
+  width: 220px;
+  max-width: 100%;
+  text-align: center;
+}
+
+.adm-review-modal-actions.center .adm-review-save-btn {
+  min-width: 140px;
+  text-align: center;
 }
 
 .adm-review-save-btn {
@@ -1680,6 +1733,17 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
+  }
+
+  .adm-review-modal-actions.center {
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+
+  .adm-review-modal-actions.center .adm-modal-cancel,
+  .adm-review-modal-actions.center .adm-review-save-btn {
+    width: 100%;
+    flex: 1 1 auto;
   }
 }
 

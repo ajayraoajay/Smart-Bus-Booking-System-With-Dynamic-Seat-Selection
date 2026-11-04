@@ -2121,6 +2121,15 @@ export default function AdminDashboardPage() {
           <div className="adm-review-modal" onClick={(e) => e.stopPropagation()}>
             <div className="adm-review-modal-header">
               <h3>📋 Review Schedule Details</h3>
+              <button
+                type="button"
+                className="adm-modal-close-btn"
+                onClick={() => !schedLoading && setConfirmSchedModal(null)}
+                title="Close"
+                disabled={schedLoading}
+              >
+                ✕
+              </button>
             </div>
 
             <div className="adm-modal-notice-banner">
@@ -2151,9 +2160,9 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="adm-review-detail-item">
-                <span className="adm-review-detail-label">Bus Type & A/C</span>
+                <span className="adm-review-detail-label">Bus Layout & A/C</span>
                 <span className="adm-review-detail-val">
-                  {confirmSchedModal.acType} • {confirmSchedModal.busType}
+                  {confirmSchedModal.busType || "Seater"} • {confirmSchedModal.acType || "Non-A/C"}
                 </span>
               </div>
 
@@ -2222,14 +2231,14 @@ export default function AdminDashboardPage() {
               />
             </div>
 
-            <div className="adm-review-modal-actions">
+            <div className="adm-review-modal-actions center">
               <button
                 type="button"
                 className="adm-modal-cancel"
                 onClick={() => setConfirmSchedModal(null)}
                 disabled={schedLoading}
               >
-                Back to Form
+                Cancel
               </button>
               <button
                 type="button"
@@ -2237,7 +2246,7 @@ export default function AdminDashboardPage() {
                 onClick={handleConfirmAddSchedule}
                 disabled={schedLoading}
               >
-                {schedLoading ? "Saving..." : "Confirm & Add Schedule"}
+                {schedLoading ? "Saving..." : "Confirm"}
               </button>
             </div>
           </div>
@@ -2247,7 +2256,18 @@ export default function AdminDashboardPage() {
       {priceEditModal && (
         <div className="adm-modal-overlay" onClick={() => !priceEditLoading && setPriceEditModal(null)}>
           <div className="adm-edit-price-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>✏️ Edit Schedule Price</h3>
+            <div className="adm-review-modal-header">
+              <h3>✏️ Edit Schedule Price</h3>
+              <button
+                type="button"
+                className="adm-modal-close-btn"
+                onClick={() => !priceEditLoading && setPriceEditModal(null)}
+                title="Close"
+                disabled={priceEditLoading}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ margin: "0 0 1rem", fontSize: "0.88rem", color: "var(--text3)" }}>
               Update the price per seat for this schedule. Only price is editable.
             </p>
@@ -2259,9 +2279,9 @@ export default function AdminDashboardPage() {
                 <div><strong>Schedule ID:</strong> <span className="adm-booking-id">{priceEditModal.schedule.scheduleId}</span></div>
               )}
               <div><strong>Route:</strong> {priceEditModal.schedule.route ? `${priceEditModal.schedule.route.fromCity} → ${priceEditModal.schedule.route.toCity}` : "—"}</div>
-              <div><strong>Bus:</strong> {priceEditModal.schedule.busNumber} ({priceEditModal.schedule.acType || "Non-A/C"} • {priceEditModal.schedule.busType || "Seater"})</div>
+              <div><strong>Bus:</strong> {priceEditModal.schedule.busNumber} ({priceEditModal.schedule.busType || "Seater"} • {priceEditModal.schedule.acType || "Non-A/C"})</div>
               <div><strong>Travel Date:</strong> {priceEditModal.schedule.travelDate}</div>
-              <div><strong>Timing:</strong> {priceEditModal.schedule.departureTime} → {priceEditModal.schedule.arrivalTime}</div>
+              <div><strong>Timing:</strong> {normalizeTimeValue(priceEditModal.schedule.departureTime) || priceEditModal.schedule.departureTime || "—"} → {normalizeTimeValue(priceEditModal.schedule.arrivalTime) || priceEditModal.schedule.arrivalTime || "—"}{priceEditModal.schedule.arrivalDay && Number(priceEditModal.schedule.arrivalDay) > 1 ? ` (Day ${priceEditModal.schedule.arrivalDay})` : ""}</div>
             </div>
 
             <div className="adm-edit-price-field">
