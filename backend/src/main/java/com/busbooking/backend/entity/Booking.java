@@ -31,6 +31,9 @@ public class Booking {
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
+    @Column(name = "email")
+    private String email;
+
     @ManyToOne
     @JoinColumn(name = "schedule_id", nullable = false)
     private Schedule schedule;
@@ -70,4 +73,17 @@ public class Booking {
 
     @Column(name = "user_id")
     private Long userId;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
+    private User user;
+
+    public String getUserName() {
+        return user != null ? user.getName() : null;
+    }
+
+    public String getUserEmail() {
+        return user != null ? user.getEmail() : null;
+    }
 }

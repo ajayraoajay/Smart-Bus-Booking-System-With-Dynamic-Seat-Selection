@@ -491,6 +491,7 @@ export default function SeatBookingPage() {
       const response = await api.post("/bookings", {
         passengerName: passengerNameSummary,
         passengerDetails,
+        email: email.trim(),
         phoneNumber,
         scheduleId: Number(scheduleId),
         seatNumber: selectedSeats[0],

@@ -100,6 +100,7 @@ public class BookingService {
         );
         booking.setPassengerDetails(passengerDetails);
         booking.setPhoneNumber(bookingRequest.getPhoneNumber());
+        booking.setEmail(bookingRequest.getEmail());
         booking.setStatus("BOOKED");
         booking.setSchedule(schedule);
         booking.setTotalPrice(totalPrice);

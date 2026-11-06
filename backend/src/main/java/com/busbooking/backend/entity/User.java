@@ -35,6 +35,7 @@ public class User {
 
     private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER = new com.fasterxml.jackson.databind.ObjectMapper();
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.util.List<String> getPreviousPasswordList() {
         if (previousPasswords == null || previousPasswords.trim().isEmpty()) {
             return new java.util.ArrayList<>();

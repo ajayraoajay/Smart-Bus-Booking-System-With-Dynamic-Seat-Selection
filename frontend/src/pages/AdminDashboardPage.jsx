@@ -152,6 +152,119 @@ export const getScheduleStatus = (schedule, now = new Date()) => {
   }
 };
 
+export const getBookingBoardingDateTime = (booking) => {
+  if (!booking) return null;
+  const travelDate = booking.schedule?.travelDate;
+  if (!travelDate) return null;
+
+  let boardingTime = booking.boardingTime;
+  if (!boardingTime && booking.boardingPoint && booking.schedule?.boardingStops) {
+    const matched = booking.schedule.boardingStops.find(
+      (s) => s.point?.trim().toLowerCase() === booking.boardingPoint?.trim().toLowerCase()
+    );
+    if (matched?.time) boardingTime = matched.time;
+  }
+  if (!boardingTime) {
+    boardingTime = booking.schedule?.departureTime;
+  }
+  if (!boardingTime) return null;
+
+  const dateParts = String(travelDate).split("-").map(Number);
+  if (dateParts.length < 3 || dateParts.some(isNaN)) return null;
+  const [y, m, d] = dateParts;
+
+  const timeParts = String(boardingTime).split(":").map(Number);
+  if (timeParts.length < 2 || timeParts.some(isNaN)) return null;
+  const [h, min] = timeParts;
+
+  return new Date(y, m - 1, d, h, min, 0, 0);
+};
+
+export const isBookingBoardingPassed = (booking, now = new Date()) => {
+  const boardingDateTime = getBookingBoardingDateTime(booking);
+  if (!boardingDateTime) return false;
+  return now.getTime() >= boardingDateTime.getTime();
+};
+
+export const getBookingDroppingDateTime = (booking) => {
+  if (!booking) return null;
+  const travelDate = booking.schedule?.travelDate;
+  if (!travelDate) return null;
+
+  let droppingTime = booking.droppingTime;
+  if (!droppingTime && booking.droppingPoint && booking.schedule?.droppingStops) {
+    const matched = booking.schedule.droppingStops.find(
+      (s) => s.point?.trim().toLowerCase() === booking.droppingPoint?.trim().toLowerCase()
+    );
+    if (matched?.time) droppingTime = matched.time;
+  }
+  if (!droppingTime) {
+    droppingTime = booking.schedule?.arrivalTime;
+  }
+  if (!droppingTime) return null;
+
+  const dateParts = String(travelDate).split("-").map(Number);
+  if (dateParts.length < 3 || dateParts.some(isNaN)) return null;
+  const [y, m, d] = dateParts;
+
+  const dropParts = String(droppingTime).split(":").map(Number);
+  if (dropParts.length < 2 || dropParts.some(isNaN)) return null;
+  const [dropH, dropM] = dropParts;
+
+  let dayOffset = 0;
+  if (booking.schedule?.arrivalDay) {
+    const arrDay = parseInt(booking.schedule.arrivalDay, 10);
+    if (!isNaN(arrDay) && arrDay > 1) {
+      dayOffset = arrDay - 1;
+    }
+  }
+
+  if (dayOffset === 0) {
+    let boardingTime = booking.boardingTime || booking.schedule?.departureTime;
+    if (boardingTime) {
+      const depParts = String(boardingTime).split(":").map(Number);
+      if (depParts.length >= 2 && !depParts.some(isNaN)) {
+        const [depH, depM] = depParts;
+        if (dropH < depH || (dropH === depH && dropM < depM)) {
+          dayOffset = 1;
+        }
+      }
+    }
+  }
+
+  return new Date(y, m - 1, d + dayOffset, dropH, dropM, 0, 0);
+};
+
+export const isBookingDroppingPassed = (booking, now = new Date()) => {
+  const droppingDateTime = getBookingDroppingDateTime(booking);
+  if (droppingDateTime) {
+    return now.getTime() >= droppingDateTime.getTime();
+  }
+  if (booking.schedule && getScheduleStatus(booking.schedule, now) === "Completed") {
+    return true;
+  }
+  return false;
+};
+
+export const getBookingDisplayStatus = (booking, now = new Date()) => {
+  if (booking?.status === "CANCELLED") {
+    return "CANCELLED";
+  }
+  if (isBookingDroppingPassed(booking, now)) {
+    return "Completed";
+  }
+  if (booking?.status === "BOOKED") {
+    return "CONFIRMED";
+  }
+  return booking?.status || "CONFIRMED";
+};
+
+export const getBookingStatusBadgeClass = (status) => {
+  if (status === "CANCELLED") return "adm-status-cancelled";
+  if (status === "Completed" || status === "COMPLETED") return "adm-status-completed";
+  return "adm-status-booked";
+};
+
 const createEmptyScheduleForm = () => ({
   routeId: "",
   busNumber: "",
@@ -448,6 +561,12 @@ export default function AdminDashboardPage() {
   const [routePage, setRoutePage] = useState(1);
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState("");
   const [schedulePage, setSchedulePage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const BOOKINGS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setBookingPage(1);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (!routeMsg) return;
@@ -535,10 +654,35 @@ export default function AdminDashboardPage() {
   };
 
   
-  const filteredBookings = bookings.filter(b => {
-    const q = searchQuery.toLowerCase();
-    return b.passengerName?.toLowerCase().includes(q) || b.bookingId?.toLowerCase().includes(q) || b.phoneNumber?.includes(q);
+  const filteredBookings = bookings.filter((b) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const userName = (b.user?.name || b.userName || "").toLowerCase();
+    const userEmail = (b.email || b.user?.email || b.userEmail || "").toLowerCase();
+    const phone = (b.phoneNumber || b.user?.phone || "").toLowerCase();
+    const bookingId = (b.bookingId || "").toLowerCase();
+    const scheduleCustomId = (b.schedule?.scheduleId || "").toLowerCase();
+    const scheduleNumId = String(b.schedule?.id ?? "").toLowerCase();
+    const passengerName = (b.passengerName || "").toLowerCase();
+
+    return (
+      userName.includes(q) ||
+      userEmail.includes(q) ||
+      phone.includes(q) ||
+      bookingId.includes(q) ||
+      scheduleCustomId.includes(q) ||
+      scheduleNumId === q ||
+      passengerName.includes(q)
+    );
   });
+
+  const totalBookingPages = Math.max(1, Math.ceil(filteredBookings.length / BOOKINGS_PER_PAGE));
+  const safeBookingPage = Math.min(bookingPage, totalBookingPages);
+  const bookingStartIndex = (safeBookingPage - 1) * BOOKINGS_PER_PAGE;
+  const paginatedBookings = filteredBookings.slice(
+    bookingStartIndex,
+    bookingStartIndex + BOOKINGS_PER_PAGE
+  );
 
   
   const selectedSchedRoute = routes.find((route) => String(route.id) === String(schedForm.routeId));
@@ -1489,59 +1633,166 @@ export default function AdminDashboardPage() {
             </div>
             <div className="adm-search-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" placeholder="Search by name, booking ID, or phone..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <input
+                type="text"
+                placeholder="Search by user name, email, booking ID, or schedule ID..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="adm-search-clear"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setBookingPage(1);
+                  }}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
             {filteredBookings.length === 0 ? (
-              <div className="adm-empty"><div className="adm-empty-icon">📋</div><p>No bookings found.</p></div>
-            ) : (
-              <div className="adm-table-wrap">
-                <table className="adm-table adm-bookings-table">
-                  <thead><tr><th>Starting Point</th><th>Dropping Point</th><th>Journey Date</th><th className="adm-bookings-hidden-col">Route</th><th className="adm-bookings-hidden-col">Bus</th><th className="adm-bookings-hidden-col">Date</th><th className="adm-bookings-hidden-col">Seat</th><th className="adm-bookings-hidden-col">Paid</th><th className="adm-bookings-hidden-col">Refund</th><th className="adm-bookings-hidden-col">Cancelled By</th><th>Status</th><th>Actions</th></tr></thead>
-                  <tbody>
-                    {filteredBookings.map(b => (
-                      <tr key={b.id}>
-                        <td>{b.schedule?.route?.fromCity ?? "-"}</td>
-                        <td>{b.schedule?.route?.toCity ?? "-"}</td>
-                        <td>{b.schedule?.travelDate ?? "-"}</td>
-                        <td>{b.schedule?.route ? `${b.schedule.route.fromCity} → ${b.schedule.route.toCity}` : "—"}</td>
-                        <td>
-                          <div style={{display:"flex", alignItems:"center", gap:"6px"}}>
-                            {b.schedule?.busNumber ?? "—"}
-                            <span className={b.schedule?.acType === "A/C" ? "ac-badge-adm ac-yes-adm" : "ac-badge-adm ac-no-adm"}>
-                              {b.schedule?.acType === "A/C" ? "A/C" : "Non-A/C"}
-                            </span>
-                          </div>
-                        </td>
-                        <td>{b.schedule?.travelDate ?? "—"}</td>
-                        <td>
-                          <span className="adm-seat-badge">
-                            {b.seatNumbers && b.seatNumbers.trim() !== ""
-                              ? b.seatNumbers.split(",").map(s => `#${s.trim()}`).join(", ")
-                              : b.seatNumber ? `#${b.seatNumber}` : "—"}
-                          </span>
-                        </td>
-                        <td>Rs. {(b.totalPrice || 0).toLocaleString()}</td>
-                        <td>{b.status === "CANCELLED" ? `Rs. ${((b.refundAmount ?? 0)).toLocaleString()}` : "—"}</td>
-                        <td>{getCancelledByLabel(b.cancelledBy)}</td>
-                        <td><span className={`adm-status adm-status-${b.status?.toLowerCase()}`}>{getStatusLabel(b.status)}</span></td>
-                        <td>
-                          <div className="adm-action-btns">
-                            <button className="adm-btn-view" onClick={() => setTicketModalBooking(b)}>View Ticket</button>
-                            {b.status !== "CANCELLED" && (
-                              <button className="adm-btn-cancel" onClick={() => openCancelModal(b)}>Cancel</button>
-                            )}
-                            {b.status === "CANCELLED" && (
-                              <span className="adm-cancel-note">
-                                {b.cancelledBy === "ADMIN" ? "Refunded by admin" : "Refund processed"}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="adm-empty">
+                <div className="adm-empty-icon">📋</div>
+                <p>{searchQuery ? `No bookings found matching "${searchQuery}".` : "No bookings found."}</p>
               </div>
+            ) : (
+              <>
+                <div className="adm-table-wrap adm-bookings-wrap">
+                  <table className="adm-table adm-bookings-table">
+                    <colgroup>
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "19%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "18%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "11%" }} />
+                      <col style={{ width: "16%" }} />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Route</th>
+                        <th>Journey Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedBookings.map((b) => {
+                        const displayStatus = getBookingDisplayStatus(b);
+                        const canCancel = b.status !== "CANCELLED" && !isBookingBoardingPassed(b);
+                        const userName = b.user?.name || b.userName || b.passengerName || "—";
+                        const userEmail = b.email || b.user?.email || b.userEmail || "—";
+                        const phoneNumber = b.phoneNumber || b.user?.phone || "—";
+                        const routeLabel = b.schedule?.route
+                          ? `${b.schedule.route.fromCity} → ${b.schedule.route.toCity}`
+                          : "—";
+                        const journeyDate = b.schedule?.travelDate ?? "—";
+
+                        return (
+                          <tr key={b.id}>
+                            <td className="adm-booking-name-cell">{userName}</td>
+                            <td className="adm-booking-email-cell">{userEmail}</td>
+                            <td className="adm-booking-phone-cell">{phoneNumber}</td>
+                            <td className="adm-booking-route-cell">{routeLabel}</td>
+                            <td>{journeyDate}</td>
+                            <td>
+                              <span className={`adm-status ${getBookingStatusBadgeClass(displayStatus)}`}>
+                                {displayStatus}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="adm-action-btns">
+                                <button
+                                  type="button"
+                                  className="adm-btn-view"
+                                  onClick={() => setTicketModalBooking(b)}
+                                >
+                                  View Ticket
+                                </button>
+                                {canCancel && (
+                                  <button
+                                    type="button"
+                                    className="adm-btn-cancel"
+                                    onClick={() => openCancelModal(b)}
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination (10 rows per page) */}
+                <div className="adm-pagination">
+                  <div className="adm-pagination-info">
+                    Showing {filteredBookings.length === 0 ? 0 : bookingStartIndex + 1} to{" "}
+                    {Math.min(bookingStartIndex + BOOKINGS_PER_PAGE, filteredBookings.length)} of {filteredBookings.length} bookings
+                  </div>
+                  {totalBookingPages > 1 && (
+                    <div className="adm-pagination-controls">
+                      <button
+                        type="button"
+                        className="adm-page-btn"
+                        disabled={safeBookingPage <= 1}
+                        onClick={() => setBookingPage((p) => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </button>
+                      {Array.from({ length: totalBookingPages }, (_, i) => i + 1).map((p) => {
+                        if (
+                          totalBookingPages <= 7 ||
+                          p === 1 ||
+                          p === totalBookingPages ||
+                          Math.abs(p - safeBookingPage) <= 1
+                        ) {
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              className={`adm-page-btn ${safeBookingPage === p ? "active" : ""}`}
+                              onClick={() => setBookingPage(p)}
+                            >
+                              {p}
+                            </button>
+                          );
+                        } else if (
+                          p === safeBookingPage - 2 ||
+                          p === safeBookingPage + 2
+                        ) {
+                          return (
+                            <span key={p} className="adm-page-ellipsis">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                      <button
+                        type="button"
+                        className="adm-page-btn"
+                        disabled={safeBookingPage >= totalBookingPages}
+                        onClick={() => setBookingPage((p) => Math.min(totalBookingPages, p + 1))}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -1704,6 +1955,9 @@ export default function AdminDashboardPage() {
                   setScheduleSearchQuery(e.target.value);
                   setSchedulePage(1);
                 }}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
               />
               {scheduleSearchQuery && (
                 <button
@@ -1940,6 +2194,9 @@ export default function AdminDashboardPage() {
                   setRouteSearchQuery(e.target.value);
                   setRoutePage(1);
                 }}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
               />
               {routeSearchQuery && (
                 <button

@@ -16,6 +16,8 @@ public class BookingRequest {
     @NotBlank(message = "Phone number is required")
     private String phoneNumber;
 
+    private String email;
+
     @NotNull(message = "Schedule ID is required")
     private Long scheduleId;
 

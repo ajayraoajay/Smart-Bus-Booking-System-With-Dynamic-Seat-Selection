@@ -384,7 +384,7 @@
   text-transform: uppercase;
 }
 
-.adm-status-booked    { background: #dcfce7; color: #16a34a; }
+.adm-status-booked, .adm-status-confirmed { background: #dcfce7; color: #16a34a; }
 .adm-status-reserved  { background: #fef9c3; color: #ca8a04; }
 .adm-status-cancelled { background: #fee2e2; color: #dc2626; }
 .adm-status-scheduled { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; text-transform: none; }
@@ -392,7 +392,7 @@
 .adm-status-completed { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; text-transform: none; }
 
 
-.adm-action-btns { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.adm-action-btns { display: flex; gap: 0.4rem; flex-wrap: nowrap; align-items: center; white-space: nowrap; }
 
 .adm-btn-view {
   background: #dbeafe; border: 1px solid #bfdbfe; color: #1d4ed8;
@@ -524,21 +524,138 @@
   font-weight: 600;
 }
 
+/* Bookings Table Specific Styles */
+.adm-bookings-wrap {
+  overflow-x: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.adm-bookings-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.adm-bookings-table th,
+.adm-bookings-table td {
+  padding: 0.65rem 0.35rem;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.adm-bookings-table th:first-child,
+.adm-bookings-table td:first-child {
+  padding-left: 0.65rem;
+}
+
+.adm-bookings-table th:last-child,
+.adm-bookings-table td:last-child {
+  padding-right: 0.65rem;
+}
+
+.adm-bookings-table th {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.adm-bookings-table td {
+  font-size: 0.950rem;
+  color: var(--text2);
+}
+
+.adm-bookings-table th:nth-child(1),
+.adm-bookings-table td:nth-child(1),
+.adm-bookings-table td.adm-booking-name-cell {
+  width: 12%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.adm-bookings-table th:nth-child(2),
+.adm-bookings-table td:nth-child(2),
+.adm-bookings-table td.adm-booking-email-cell {
+  width: 19%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+.adm-bookings-table th:nth-child(3),
+.adm-bookings-table td:nth-child(3),
+.adm-bookings-table td.adm-booking-phone-cell {
+  width: 12%;
+  white-space: nowrap;
+}
+
 .adm-bookings-table th:nth-child(4),
-.adm-bookings-table th:nth-child(5),
-.adm-bookings-table th:nth-child(6),
-.adm-bookings-table th:nth-child(7),
-.adm-bookings-table th:nth-child(8),
-.adm-bookings-table th:nth-child(9),
-.adm-bookings-table th:nth-child(10),
 .adm-bookings-table td:nth-child(4),
-.adm-bookings-table td:nth-child(5),
-.adm-bookings-table td:nth-child(6),
-.adm-bookings-table td:nth-child(7),
-.adm-bookings-table td:nth-child(8),
-.adm-bookings-table td:nth-child(9),
-.adm-bookings-table td:nth-child(10) {
-  display: none;
+.adm-bookings-table td.adm-booking-route-cell {
+  width: 18%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.adm-bookings-table th:nth-child(5),
+.adm-bookings-table td:nth-child(5) {
+  width: 12%;
+  white-space: nowrap;
+}
+
+.adm-bookings-table th:nth-child(6),
+.adm-bookings-table td:nth-child(6) {
+  width: 11%;
+  white-space: nowrap;
+  padding-right: 0.75rem;
+}
+
+.adm-bookings-table th:nth-child(7),
+.adm-bookings-table td:nth-child(7) {
+  width: 16%;
+  white-space: nowrap;
+  padding-left: 0.75rem;
+}
+
+.adm-bookings-table .adm-status {
+  display: inline-block;
+  padding: 2.5px 7px;
+  border-radius: 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.adm-bookings-table .adm-action-btns {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.adm-bookings-table .adm-btn-view,
+.adm-bookings-table .adm-btn-cancel {
+  padding: 3px 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.25;
 }
 
 
@@ -1691,7 +1808,8 @@
     width: 100%;
   }
 
-  .adm-table-wrap {
+  .adm-table-wrap,
+  .adm-bookings-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }

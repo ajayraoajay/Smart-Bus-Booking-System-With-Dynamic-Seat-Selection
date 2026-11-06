@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import ConfirmationModal from "../components/ConfirmationModal";
 import TicketDetailsModal from "../components/TicketDetailsModal";
 import api from "../services/api";
+import {
+  getBookingDisplayStatus,
+  isBookingBoardingPassed,
+} from "./AdminDashboardPage";
 import "./AdminBookingsPage.css";
 
 const sortBookingsNewestFirst = (bookingList) =>
@@ -17,10 +21,17 @@ function AdminBookingsPage() {
   const [cancelModal, setCancelModal] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [ticketModalBooking, setTicketModalBooking] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [bookingPage, setBookingPage] = useState(1);
+  const BOOKINGS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  useEffect(() => {
+    setBookingPage(1);
+  }, [searchQuery]);
 
   const fetchBookings = async () => {
     try {
@@ -59,18 +70,6 @@ function AdminBookingsPage() {
     }
   };
 
-  const getStatusLabel = (status) => {
-    if (status === "BOOKED") {
-      return "CONFIRMED";
-    }
-
-    if (status === "CANCELLED") {
-      return "CANCELLED";
-    }
-
-    return status;
-  };
-
   const getRouteLabel = (booking) => {
     if (booking?.schedule?.route) {
       return `${booking.schedule.route.fromCity} -> ${booking.schedule.route.toCity}`;
@@ -78,6 +77,36 @@ function AdminBookingsPage() {
 
     return booking?.bookingId ?? "this booking";
   };
+
+  const filteredBookings = bookings.filter((b) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const userName = (b.user?.name || b.userName || "").toLowerCase();
+    const userEmail = (b.email || b.user?.email || b.userEmail || "").toLowerCase();
+    const phone = (b.phoneNumber || b.user?.phone || "").toLowerCase();
+    const bookingId = (b.bookingId || "").toLowerCase();
+    const scheduleCustomId = (b.schedule?.scheduleId || "").toLowerCase();
+    const scheduleNumId = String(b.schedule?.id ?? "").toLowerCase();
+    const passengerName = (b.passengerName || "").toLowerCase();
+
+    return (
+      userName.includes(q) ||
+      userEmail.includes(q) ||
+      phone.includes(q) ||
+      bookingId.includes(q) ||
+      scheduleCustomId.includes(q) ||
+      scheduleNumId === q ||
+      passengerName.includes(q)
+    );
+  });
+
+  const totalBookingPages = Math.max(1, Math.ceil(filteredBookings.length / BOOKINGS_PER_PAGE));
+  const safeBookingPage = Math.min(bookingPage, totalBookingPages);
+  const bookingStartIndex = (safeBookingPage - 1) * BOOKINGS_PER_PAGE;
+  const paginatedBookings = filteredBookings.slice(
+    bookingStartIndex,
+    bookingStartIndex + BOOKINGS_PER_PAGE
+  );
 
   return (
     <div className="abp-page">
@@ -116,71 +145,197 @@ function AdminBookingsPage() {
         <h1 className="abp-title">Admin - All Bookings</h1>
         <p className="abp-subtitle">View instant bookings in a simpler summary table and open full ticket details when needed.</p>
 
+        <div className="abp-search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by user name, email, booking ID, or schedule ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="abp-search-clear"
+              onClick={() => {
+                setSearchQuery("");
+                setBookingPage(1);
+              }}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {loading && <p className="abp-empty-text">Loading bookings...</p>}
         {error && <p className="abp-error-text">{error}</p>}
         {success && <p className="abp-empty-text" style={{ color: "#15803d", marginBottom: "1rem" }}>{success}</p>}
 
-        {!loading && bookings.length === 0 && (
-          <p className="abp-empty-text">No bookings found.</p>
+        {!loading && filteredBookings.length === 0 && (
+          <p className="abp-empty-text">
+            {searchQuery ? `No bookings found matching "${searchQuery}".` : "No bookings found."}
+          </p>
         )}
 
-        {!loading && bookings.length > 0 && (
-          <div className="abp-table-wrapper">
-            <table className="abp-booking-table">
-              <thead>
-                <tr>
-                  <th>Starting Point</th>
-                  <th>Dropping Point</th>
-                  <th>Journey Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td>{booking.schedule?.route?.fromCity ?? "-"}</td>
-                    <td>{booking.schedule?.route?.toCity ?? "-"}</td>
-                    <td>{booking.schedule?.travelDate ?? "-"}</td>
-                    <td>
-                      <span
-                        className={
-                          booking.status === "BOOKED"
-                            ? "abp-status abp-status-booked"
-                            : "abp-status abp-status-cancelled"
-                        }
-                      >
-                        {getStatusLabel(booking.status)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="abp-action-group">
-                        <button
-                          className="abp-view-btn"
-                          onClick={() => setTicketModalBooking(booking)}
-                        >
-                          View Ticket
-                        </button>
-
-                        {booking.status !== "CANCELLED" ? (
-                          <button
-                            className="abp-cancel-btn"
-                            onClick={() => openCancelModal(booking)}
-                          >
-                            Cancel
-                          </button>
-                        ) : (
-                          <span className="abp-cancelled-label">
-                            {booking.cancelledBy === "ADMIN" ? "Refunded by admin" : "Refund processed"}
-                          </span>
-                        )}
-                      </div>
-                    </td>
+        {!loading && filteredBookings.length > 0 && (
+          <>
+            <div className="abp-table-wrapper abp-bookings-wrap">
+              <table className="abp-booking-table">
+                <colgroup>
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "19%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "16%" }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Route</th>
+                    <th>Journey Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {paginatedBookings.map((booking) => {
+                    const displayStatus = getBookingDisplayStatus(booking);
+                    const canCancel =
+                      booking.status !== "CANCELLED" &&
+                      !isBookingBoardingPassed(booking);
+                    const userName =
+                      booking.user?.name ||
+                      booking.userName ||
+                      booking.passengerName ||
+                      "-";
+                    const userEmail =
+                      booking.email ||
+                      booking.user?.email ||
+                      booking.userEmail ||
+                      "-";
+                    const phoneNumber =
+                      booking.phoneNumber || booking.user?.phone || "-";
+                    const routeLabel = booking.schedule?.route
+                      ? `${booking.schedule.route.fromCity} → ${booking.schedule.route.toCity}`
+                      : "-";
+                    const journeyDate = booking.schedule?.travelDate ?? "-";
+
+                    return (
+                      <tr key={booking.id}>
+                        <td className="abp-booking-name-cell">{userName}</td>
+                        <td className="abp-booking-email-cell">{userEmail}</td>
+                        <td className="abp-booking-phone-cell">{phoneNumber}</td>
+                        <td className="abp-booking-route-cell">{routeLabel}</td>
+                        <td>{journeyDate}</td>
+                        <td>
+                          <span
+                            className={
+                              displayStatus === "CANCELLED"
+                                ? "abp-status abp-status-cancelled"
+                                : displayStatus === "Completed" || displayStatus === "COMPLETED"
+                                ? "abp-status abp-status-completed"
+                                : "abp-status abp-status-booked"
+                            }
+                          >
+                            {displayStatus}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="abp-action-group">
+                            <button
+                              type="button"
+                              className="abp-view-btn"
+                              onClick={() => setTicketModalBooking(booking)}
+                            >
+                              View Ticket
+                            </button>
+
+                            {canCancel && (
+                              <button
+                                type="button"
+                                className="abp-cancel-btn"
+                                onClick={() => openCancelModal(booking)}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination (10 rows per page) */}
+            <div className="abp-pagination">
+              <div className="abp-pagination-info">
+                Showing {filteredBookings.length === 0 ? 0 : bookingStartIndex + 1} to{" "}
+                {Math.min(bookingStartIndex + BOOKINGS_PER_PAGE, filteredBookings.length)} of {filteredBookings.length} bookings
+              </div>
+              {totalBookingPages > 1 && (
+                <div className="abp-pagination-controls">
+                  <button
+                    type="button"
+                    className="abp-page-btn"
+                    disabled={safeBookingPage <= 1}
+                    onClick={() => setBookingPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalBookingPages }, (_, i) => i + 1).map((p) => {
+                    if (
+                      totalBookingPages <= 7 ||
+                      p === 1 ||
+                      p === totalBookingPages ||
+                      Math.abs(p - safeBookingPage) <= 1
+                    ) {
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          className={`abp-page-btn ${safeBookingPage === p ? "active" : ""}`}
+                          onClick={() => setBookingPage(p)}
+                        >
+                          {p}
+                        </button>
+                      );
+                    } else if (
+                      p === safeBookingPage - 2 ||
+                      p === safeBookingPage + 2
+                    ) {
+                      return (
+                        <span key={p} className="abp-page-ellipsis">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                  <button
+                    type="button"
+                    className="abp-page-btn"
+                    disabled={safeBookingPage >= totalBookingPages}
+                    onClick={() => setBookingPage((p) => Math.min(totalBookingPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         <ConfirmationModal

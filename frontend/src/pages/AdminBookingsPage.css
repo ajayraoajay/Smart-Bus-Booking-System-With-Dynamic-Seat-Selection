@@ -50,16 +50,24 @@
 }
 
 .abp-table-wrapper {
-  overflow-x: auto;
+  overflow-x: hidden;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 18px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
+@media (max-width: 768px) {
+  .abp-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .abp-booking-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .abp-booking-table thead {
@@ -68,23 +76,95 @@
 
 .abp-booking-table th,
 .abp-booking-table td {
-  padding: 1rem;
+  padding: 0.65rem 0.35rem;
   text-align: left;
   border-bottom: 1px solid #eef2f7;
-  white-space: nowrap;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.abp-booking-table th:first-child,
+.abp-booking-table td:first-child {
+  padding-left: 0.65rem;
+}
+
+.abp-booking-table th:last-child,
+.abp-booking-table td:last-child {
+  padding-right: 0.65rem;
 }
 
 .abp-booking-table th {
   color: #334155;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
 .abp-booking-table td {
   color: #334155;
-  font-size: 0.9rem;
+  font-size: 0.950rem;
+}
+
+.abp-booking-table th:nth-child(1),
+.abp-booking-table td:nth-child(1),
+.abp-booking-table td.abp-booking-name-cell {
+  width: 12%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.abp-booking-table th:nth-child(2),
+.abp-booking-table td:nth-child(2),
+.abp-booking-table td.abp-booking-email-cell {
+  width: 19%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+.abp-booking-table th:nth-child(3),
+.abp-booking-table td:nth-child(3),
+.abp-booking-table td.abp-booking-phone-cell {
+  width: 12%;
+  white-space: nowrap;
+}
+
+.abp-booking-table th:nth-child(4),
+.abp-booking-table td:nth-child(4),
+.abp-booking-table td.abp-booking-route-cell {
+  width: 18%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.abp-booking-table th:nth-child(5),
+.abp-booking-table td:nth-child(5) {
+  width: 12%;
+  white-space: nowrap;
+}
+
+.abp-booking-table th:nth-child(6),
+.abp-booking-table td:nth-child(6) {
+  width: 11%;
+  white-space: nowrap;
+  padding-right: 0.75rem;
+}
+
+.abp-booking-table th:nth-child(7),
+.abp-booking-table td:nth-child(7) {
+  width: 16%;
+  white-space: nowrap;
+  padding-left: 0.75rem;
 }
 
 .abp-booking-table tbody tr:hover {
@@ -98,11 +178,13 @@
 .abp-status {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.7rem;
+  padding: 2.5px 7px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 800;
+  letter-spacing: 0.2px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .abp-status-booked {
@@ -115,22 +197,145 @@
   color: #b91c1c;
 }
 
+.abp-status-completed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.abp-search-wrap {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.abp-search-wrap svg {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.abp-search-wrap input {
+  width: 100%;
+  padding: 0.65rem 2.2rem 0.65rem 2.4rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.abp-search-wrap input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.abp-search-clear {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.abp-search-clear:hover {
+  color: #1e293b;
+}
+
+.abp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 0.75rem 0.25rem 0.25rem;
+  flex-wrap: wrap;
+}
+
+.abp-pagination-info {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.abp-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.abp-page-btn {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.abp-page-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.abp-page-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.abp-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.abp-page-ellipsis {
+  padding: 0 0.25rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
 .abp-action-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .abp-view-btn {
   background: #dbeafe;
   border: 1px solid #bfdbfe;
   color: #1d4ed8;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  padding: 0.45rem 0.8rem;
-  border-radius: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
   cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.25;
 }
 
 .abp-view-btn:hover {
@@ -141,21 +346,17 @@
   background: #fee2e2;
   border: 1px solid #fecaca;
   color: #dc2626;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  padding: 0.45rem 0.8rem;
-  border-radius: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
   cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.25;
 }
 
 .abp-cancel-btn:hover {
   background: #fecaca;
-}
-
-.abp-cancelled-label {
-  color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 600;
 }
 
 .abp-empty-text,
