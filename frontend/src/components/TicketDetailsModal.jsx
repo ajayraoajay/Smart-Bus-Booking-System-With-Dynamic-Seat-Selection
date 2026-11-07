@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { getBookingDisplayStatus } from "../pages/AdminDashboardPage";
 import "../pages/BookingSuccessPage.css";
 import "./TicketDetailsModal.css";
 
@@ -8,6 +9,7 @@ const getBusLayoutLabel = (busType) => (busType === "Sleeper" ? "Sleeper" : "Sea
 
 const escapePdfText = (value) =>
   String(value ?? "")
+    .replace(/→/g, "->")
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
     .replace(/\)/g, "\\)")
@@ -78,14 +80,14 @@ const buildTicketPdfBlob = ({
     { text: `Bus Layout: ${busLayoutType}`, x: 52, y: 654, size: 11, font: "F1" },
     { text: `Travel Date: ${schedule?.travelDate || "-"}`, x: 52, y: 636, size: 11, font: "F1" },
     { text: `Departure: ${formatDisplayTime(schedule?.departureTime)}`, x: 310, y: 708, size: 11, font: "F1" },
-    { text: `Arrival: ${formatDisplayTime(schedule?.arrivalTime)}`, x: 310, y: 690, size: 11, font: "F1" },
+    { text: `Arrival: ${formatDisplayTime(schedule?.arrivalTime)}${schedule?.arrivalDay && Number(schedule.arrivalDay) > 1 ? ` (Day ${schedule.arrivalDay})` : ""}`, x: 310, y: 690, size: 11, font: "F1" },
     { text: `Duration: ${schedule?.duration || "-"}`, x: 310, y: 672, size: 11, font: "F1" },
     { text: "Passenger Details", x: 52, y: 590, size: 14, font: "F2" },
     { text: `Passengers: ${passengerSummary}`, x: 52, y: 566, size: 11, font: "F1" },
     { text: `Email: ${email}`, x: 52, y: 548, size: 11, font: "F1" },
     { text: `Phone: ${phoneNumber}`, x: 52, y: 530, size: 11, font: "F1" },
     { text: `Seats: ${selectedSeats.map((seat) => `Seat ${seat}`).join(", ")}`, x: 52, y: 512, size: 11, font: "F1" },
-    { text: `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : "Confirmed"}`, x: 310, y: 566, size: 11, font: "F1" },
+    { text: `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : normalizedStatus === "COMPLETED" ? "Completed" : "Confirmed"}`, x: 310, y: 566, size: 11, font: "F1" },
     { text: `Boarding: ${boardingPoint} (${formatDisplayTime(boardingTime)})`, x: 310, y: 548, size: 11, font: "F1" },
     { text: `Dropping: ${droppingPoint} (${formatDisplayTime(droppingTime)})`, x: 310, y: 530, size: 11, font: "F1" },
     { text: "Payment Summary", x: 52, y: 466, size: 14, font: "F2" },
@@ -169,7 +171,7 @@ const buildTicketText = ({
 }) => {
   const bookingIds = bookings.map((booking) => booking.bookingId).join(", ");
   const routeName = schedule?.route
-    ? `${schedule.route.fromCity} -> ${schedule.route.toCity}`
+    ? `${schedule.route.fromCity} → ${schedule.route.toCity}`
     : "-";
 
   return [
@@ -181,7 +183,7 @@ const buildTicketText = ({
     `Bus Layout: ${getBusLayoutLabel(schedule?.busType)}`,
     `Travel Date: ${schedule?.travelDate || "-"}`,
     `Departure Time: ${formatDisplayTime(schedule?.departureTime)}`,
-    `Arrival Time: ${formatDisplayTime(schedule?.arrivalTime)}`,
+    `Arrival Time: ${formatDisplayTime(schedule?.arrivalTime)}${schedule?.arrivalDay && Number(schedule.arrivalDay) > 1 ? ` (Day ${schedule.arrivalDay})` : ""}`,
     `Duration: ${schedule?.duration || "-"}`,
     `Passengers: ${passengerSummary}`,
     `Email: ${email}`,
@@ -190,7 +192,7 @@ const buildTicketText = ({
     `Dropping Point: ${droppingPoint} (${formatDisplayTime(droppingTime)})`,
     `Selected Seats: ${selectedSeats.map((seat) => `Seat ${seat}`).join(", ")}`,
     `Seat Count: ${selectedSeats.length}`,
-    `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : "Confirmed"}`,
+    `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : normalizedStatus === "COMPLETED" ? "Completed" : "Confirmed"}`,
     `Total Price: Rs. ${totalPrice.toLocaleString()}`,
     `Amount Paid: Rs. ${amountPaid.toLocaleString()}`,
   ].join("\n");
@@ -239,10 +241,16 @@ export default function TicketDetailsModal({
     const selectedSeats = parseSelectedSeats(booking);
     const schedule = booking.schedule ?? null;
     const routeName = schedule?.route
-      ? `${schedule.route.fromCity} -> ${schedule.route.toCity}`
+      ? `${schedule.route.fromCity} → ${schedule.route.toCity}`
       : "-";
-    const normalizedStatus = booking.status === "CANCELLED" ? "CANCELLED" : "BOOKED";
-    const email = booking.email ?? booking.user?.email ?? emailFallback ?? "-";
+    const displayStatus = getBookingDisplayStatus(booking);
+    const normalizedStatus =
+      displayStatus === "CANCELLED"
+        ? "CANCELLED"
+        : displayStatus === "Completed" || displayStatus === "COMPLETED"
+        ? "COMPLETED"
+        : "BOOKED";
+    const email = booking.email || booking.passengerEmail || "-";
     const passengerDetails = normalizePassengerDetails(
       booking.passengerDetails,
       selectedSeats,
@@ -259,7 +267,7 @@ export default function TicketDetailsModal({
       passengerDetails,
       passengerSummary,
       email,
-      phoneNumber: booking.phoneNumber ?? "-",
+      phoneNumber: booking.phoneNumber || booking.passengerPhone || "-",
       schedule,
       routeName,
       busLayoutType: getBusLayoutLabel(schedule?.busType),
@@ -344,7 +352,7 @@ export default function TicketDetailsModal({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(downloadUrl);
-      setActionMessage("Ticket PDF downloaded successfully.");
+      setActionMessage("");
     } catch {
       setActionMessage("Unable to download the ticket PDF right now. Please try again.");
     }
@@ -383,7 +391,7 @@ export default function TicketDetailsModal({
               text: `Ticket for ${passengerSummary}`,
               files: [ticketFile],
             });
-            setActionMessage("Ticket shared successfully.");
+            setActionMessage("");
             return;
           }
         }
@@ -392,7 +400,7 @@ export default function TicketDetailsModal({
           title: shareTitle,
           text: ticketText,
         });
-        setActionMessage("Ticket shared successfully.");
+        setActionMessage("");
         return;
       }
 
@@ -424,171 +432,195 @@ export default function TicketDetailsModal({
 
   return (
     <div className="tdm-overlay" onClick={(event) => event.target === event.currentTarget && onClose?.()}>
-      <div className="tdm-dialog" role="dialog" aria-modal="true" aria-label="Ticket details">
-        <button className="tdm-close" type="button" onClick={onClose} aria-label="Close ticket details">
-          x
+      <div className="tdm-dialog" role="dialog" aria-modal="true" aria-label="Ticket details" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="tdm-close-btn"
+          type="button"
+          onClick={onClose}
+          title="Close"
+          aria-label="Close ticket details"
+        >
+          ✕
         </button>
 
-        <div className="tdm-scroll">
-          <div className="bsp-card tdm-card">
-            <div className="bsp-success-header">
-              <div className={`tdm-status-circle ${normalizedStatus === "CANCELLED" ? "cancelled" : ""}`}>
-                {normalizedStatus === "CANCELLED" ? "!" : "OK"}
-              </div>
-              <h1 className="bsp-title">
-                {normalizedStatus === "CANCELLED" ? "Cancelled Ticket" : "Ticket Details"}
-              </h1>
-              <p className="bsp-subtitle">
-                {normalizedStatus === "CANCELLED"
-                  ? "This booking was cancelled and the full ticket details are shown below."
-                  : "This ticket is confirmed and all booking details are shown below."}
-              </p>
-            </div>
-
-            <div className="bsp-booking-ids">
-              <div className="bsp-id-badge">
-                <span className="bsp-id-label">Booking ID</span>
-                <span className="bsp-id-value">{bookingIdForFile}</span>
-              </div>
-            </div>
-
-            {schedule && (
-              <div className="bsp-section">
-                <h3 className="bsp-section-title">Journey Details</h3>
-                <div className="bsp-detail-row">
-                  <span>Route</span>
-                  <span>{schedule.route?.fromCity} {"->"} {schedule.route?.toCity}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>Bus Number</span>
-                  <span>{schedule.busNumber || "-"}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>A/C Type</span>
-                  <span>{schedule.acType === "A/C" ? "A/C" : "Non-A/C"}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>Bus Layout</span>
-                  <span>{busLayoutType}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>Travel Date</span>
-                  <span>{schedule.travelDate || "-"}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>Departure</span>
-                  <span>{formatDisplayTime(schedule.departureTime)}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>Arrival</span>
-                  <span>{formatDisplayTime(schedule.arrivalTime)}</span>
-                </div>
-                <div className="bsp-detail-row">
-                  <span>Duration</span>
-                  <span>{schedule.duration || "-"}</span>
-                </div>
-              </div>
+        <div className="bsp-success-header">
+          <div className={`tdm-status-circle ${normalizedStatus === "CANCELLED" ? "cancelled" : normalizedStatus === "COMPLETED" ? "completed" : ""}`}>
+            {normalizedStatus === "CANCELLED" ? (
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             )}
+          </div>
+          <h1 className="bsp-title">
+            {normalizedStatus === "CANCELLED"
+              ? "Cancelled Ticket"
+              : normalizedStatus === "COMPLETED"
+              ? "Completed Journey"
+              : "Ticket Details"}
+          </h1>
+          <p className="bsp-subtitle">
+            {normalizedStatus === "CANCELLED"
+              ? "This booking was cancelled and the full ticket details are shown below."
+              : normalizedStatus === "COMPLETED"
+              ? "This journey has been completed and the full ticket details are shown below."
+              : "This ticket is confirmed and all booking details are shown below."}
+          </p>
+        </div>
 
-            <div className="bsp-section">
-              <h3 className="bsp-section-title">Passenger Details</h3>
-              <div className="bsp-detail-row">
-                <span>Phone Number</span>
-                <span>{phoneNumber}</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>Email</span>
-                <span>{email || "-"}</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>Passenger Count</span>
-                <span>{passengerDetails.length || selectedSeats.length || "-"}</span>
-              </div>
-              {passengerDetails.length > 0 && (
-                <div className="bsp-passenger-list">
-                  {passengerDetails.map((detail, index) => (
-                    <div className="bsp-passenger-card" key={`${detail.seatNumber}-${index}`}>
-                      <div className="bsp-passenger-card-top">
-                        <span className="bsp-passenger-seat">Seat {detail.seatNumber || "-"}</span>
-                        <span className="bsp-passenger-gender">{detail.gender || "Gender not specified"}</span>
-                      </div>
-                      <div className="bsp-passenger-name">{detail.name || "-"}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="bsp-detail-row">
-                <span>Boarding Point</span>
-                <span>{boardingPoint} ({formatDisplayTime(boardingTime)})</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>Dropping Point</span>
-                <span>{droppingPoint} ({formatDisplayTime(droppingTime)})</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>No. of Seats</span>
-                <span>{selectedSeats.length || "-"}</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>Selected Seats</span>
-                <span>{selectedSeats.length ? selectedSeats.map((seat) => `Seat ${seat}`).join(", ") : "-"}</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>Status</span>
-                <span className={`bsp-status bsp-status-${normalizedStatus.toLowerCase()}`}>
-                  {normalizedStatus === "CANCELLED" ? "Cancelled" : "Confirmed"}
-                </span>
-              </div>
+        <div className="bsp-booking-ids">
+          <div className="bsp-id-badge">
+            <span className="bsp-id-label">Booking ID</span>
+            <span className="bsp-id-value">{bookingIdForFile}</span>
+          </div>
+        </div>
+
+        {schedule && (
+          <div className="bsp-section">
+            <h3 className="bsp-section-title">Journey Details</h3>
+            <div className="bsp-detail-row">
+              <span>Route</span>
+              <span>{schedule.route?.fromCity} → {schedule.route?.toCity}</span>
             </div>
-
-            <div className="bsp-section bsp-payment-section">
-              <h3 className="bsp-section-title">Payment Summary</h3>
-              <div className="bsp-detail-row bsp-total-row">
-                <span>Total Price</span>
-                <span className="bsp-price-total">Rs. {totalPrice.toLocaleString()}</span>
-              </div>
-              <div className="bsp-detail-row">
-                <span>Amount Paid</span>
-                <span className="bsp-price-advance">Rs. {amountPaid.toLocaleString()}</span>
-              </div>
-              {normalizedStatus === "CANCELLED" && (
-                <>
-                  <div className="bsp-detail-row">
-                    <span>Refund Amount</span>
-                    <span>Rs. {refundAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="bsp-detail-row">
-                    <span>Cancellation Charge</span>
-                    <span>Rs. {cancellationCharge.toLocaleString()}</span>
-                  </div>
-                  <div className="bsp-detail-row">
-                    <span>Cancelled By</span>
-                    <span>{getCancelledByLabel(cancelledBy)}</span>
-                  </div>
-                </>
-              )}
+            <div className="bsp-detail-row">
+              <span>Bus Number</span>
+              <span>{schedule.busNumber || "-"}</span>
             </div>
-
-            <div className="bsp-notice">
-              {email && email !== "-"
-                ? `Ticket is sent to ${email} and mobile number ${phoneNumber}. You can also download or share your ticket.`
-                : "You can download or share this ticket from here."}
+            <div className="bsp-detail-row">
+              <span>A/C Type</span>
+              <span>{schedule.acType === "A/C" ? "A/C" : "Non-A/C"}</span>
             </div>
-
-            {actionMessage && <div className="bsp-action-message">{actionMessage}</div>}
-
-            <div className="bsp-actions tdm-actions">
-              <button className="bsp-download-btn" type="button" onClick={handleDownloadTicket}>
-                Download Ticket
-              </button>
-              <button className="bsp-share-btn" type="button" onClick={handleShareTicket}>
-                Share Ticket
-              </button>
-              <button className="bsp-home-btn" type="button" onClick={onClose}>
-                Close
-              </button>
+            <div className="bsp-detail-row">
+              <span>Bus Layout</span>
+              <span>{busLayoutType}</span>
+            </div>
+            <div className="bsp-detail-row">
+              <span>Travel Date</span>
+              <span>{schedule.travelDate || "-"}</span>
+            </div>
+            <div className="bsp-detail-row">
+              <span>Departure</span>
+              <span>{formatDisplayTime(schedule.departureTime)}</span>
+            </div>
+            <div className="bsp-detail-row">
+              <span>Arrival</span>
+              <span>
+                {formatDisplayTime(schedule.arrivalTime)}
+                {schedule.arrivalDay && Number(schedule.arrivalDay) > 1 ? ` (Day ${schedule.arrivalDay})` : ""}
+              </span>
+            </div>
+            <div className="bsp-detail-row">
+              <span>Duration</span>
+              <span>{schedule.duration || "-"}</span>
             </div>
           </div>
+        )}
+
+        <div className="bsp-section">
+          <h3 className="bsp-section-title">Passenger Details</h3>
+          <div className="bsp-detail-row">
+            <span>Phone Number</span>
+            <span>{phoneNumber}</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>Email</span>
+            <span>{email || "-"}</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>Passenger Count</span>
+            <span>{passengerDetails.length || selectedSeats.length || "-"}</span>
+          </div>
+          {passengerDetails.length > 0 && (
+            <div className="bsp-passenger-list">
+              {passengerDetails.map((detail, index) => (
+                <div className="bsp-passenger-card" key={`${detail.seatNumber}-${index}`}>
+                  <div className="bsp-passenger-card-top">
+                    <span className="bsp-passenger-seat">Seat {detail.seatNumber || "-"}</span>
+                    <span className="bsp-passenger-gender">{detail.gender || "Gender not specified"}</span>
+                  </div>
+                  <div className="bsp-passenger-name">{detail.name || "-"}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="bsp-detail-row">
+            <span>Boarding Point</span>
+            <span>{boardingPoint} ({formatDisplayTime(boardingTime)})</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>Dropping Point</span>
+            <span>{droppingPoint} ({formatDisplayTime(droppingTime)})</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>No. of Seats</span>
+            <span>{selectedSeats.length || "-"}</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>Selected Seats</span>
+            <span>{selectedSeats.length ? selectedSeats.map((seat) => `Seat ${seat}`).join(", ") : "-"}</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>Status</span>
+            <span className={`bsp-status bsp-status-${normalizedStatus.toLowerCase()}`}>
+              {normalizedStatus === "CANCELLED"
+                ? "Cancelled"
+                : normalizedStatus === "COMPLETED"
+                ? "Completed"
+                : "Confirmed"}
+            </span>
+          </div>
+        </div>
+
+        <div className="bsp-section bsp-payment-section">
+          <h3 className="bsp-section-title">Payment Summary</h3>
+          <div className="bsp-detail-row bsp-total-row">
+            <span>Total Price</span>
+            <span className="bsp-price-total">Rs. {totalPrice.toLocaleString()}</span>
+          </div>
+          <div className="bsp-detail-row">
+            <span>Amount Paid</span>
+            <span className="bsp-price-advance tdm-price-paid">Rs. {amountPaid.toLocaleString()}</span>
+          </div>
+          {normalizedStatus === "CANCELLED" && (
+            <>
+              <div className="bsp-detail-row">
+                <span>Refund Amount</span>
+                <span className="tdm-price-refund">Rs. {refundAmount.toLocaleString()}</span>
+              </div>
+              <div className="bsp-detail-row">
+                <span>Cancellation Charge</span>
+                <span className="tdm-price-charge">Rs. {cancellationCharge.toLocaleString()}</span>
+              </div>
+              <div className="bsp-detail-row">
+                <span>Cancelled By</span>
+                <span className="tdm-cancelled-by">{getCancelledByLabel(cancelledBy)}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="bsp-notice">
+          {email && email !== "-"
+            ? `Ticket is sent to ${email} and mobile number ${phoneNumber}. You can also download or share your ticket.`
+            : "You can download or share this ticket from here."}
+        </div>
+
+        {actionMessage && <div className="bsp-action-message">{actionMessage}</div>}
+
+        <div className="bsp-actions tdm-actions">
+          <button className="bsp-download-btn" type="button" onClick={handleDownloadTicket}>
+            Download Ticket
+          </button>
+          <button className="bsp-share-btn" type="button" onClick={handleShareTicket}>
+            Share Ticket
+          </button>
+          <button className="bsp-home-btn" type="button" onClick={onClose}>
+            Close
+          </button>
         </div>
       </div>
     </div>

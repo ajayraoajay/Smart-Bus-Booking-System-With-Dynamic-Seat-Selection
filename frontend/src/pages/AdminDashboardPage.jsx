@@ -1689,9 +1689,9 @@ export default function AdminDashboardPage() {
                       {paginatedBookings.map((b) => {
                         const displayStatus = getBookingDisplayStatus(b);
                         const canCancel = b.status !== "CANCELLED" && !isBookingBoardingPassed(b);
-                        const userName = b.user?.name || b.userName || b.passengerName || "—";
-                        const userEmail = b.email || b.user?.email || b.userEmail || "—";
-                        const phoneNumber = b.phoneNumber || b.user?.phone || "—";
+                        const userName = b.user?.name || b.userName || "—";
+                        const userEmail = b.email || b.passengerEmail || b.user?.email || "—";
+                        const phoneNumber = b.phoneNumber || b.passengerPhone || b.user?.phone || "—";
                         const routeLabel = b.schedule?.route
                           ? `${b.schedule.route.fromCity} → ${b.schedule.route.toCity}`
                           : "—";

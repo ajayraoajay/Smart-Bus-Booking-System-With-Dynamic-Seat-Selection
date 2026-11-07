@@ -217,15 +217,14 @@ function AdminBookingsPage() {
                     const userName =
                       booking.user?.name ||
                       booking.userName ||
-                      booking.passengerName ||
                       "-";
                     const userEmail =
                       booking.email ||
+                      booking.passengerEmail ||
                       booking.user?.email ||
-                      booking.userEmail ||
                       "-";
                     const phoneNumber =
-                      booking.phoneNumber || booking.user?.phone || "-";
+                      booking.phoneNumber || booking.passengerPhone || booking.user?.phone || "-";
                     const routeLabel = booking.schedule?.route
                       ? `${booking.schedule.route.fromCity} → ${booking.schedule.route.toCity}`
                       : "-";

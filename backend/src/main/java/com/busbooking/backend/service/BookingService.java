@@ -119,24 +119,7 @@ public class BookingService {
         Booking saved = bookingRepository.save(booking);
         seatHoldService.releaseSeatHold(bookingRequest.getHoldToken());
 
-        return new BookingResponse(
-                "Booking confirmed successfully",
-                saved.getBookingId(),
-                saved.getPassengerName(),
-                saved.getPassengerDetails(),
-                saved.getPhoneNumber(),
-                saved.getSeatNumber(),
-                saved.getStatus(),
-                saved.getSchedule().getId(),
-                saved.getTotalPrice(),
-                saved.getRefundAmount(),
-                saved.getCancellationCharge(),
-                saved.getCancelledBy(),
-                saved.getBoardingPoint(),
-                saved.getBoardingTime(),
-                saved.getDroppingPoint(),
-                saved.getDroppingTime()
-        );
+        return buildResponse("Booking confirmed successfully", saved);
     }
 
     public BookingResponse cancelBooking(Long bookingId, String cancelledBy) {
@@ -172,6 +155,7 @@ public class BookingService {
                 booking.getPassengerName(),
                 booking.getPassengerDetails(),
                 booking.getPhoneNumber(),
+                booking.getEmail(),
                 booking.getSeatNumber(),
                 booking.getStatus(),
                 booking.getSchedule().getId(),

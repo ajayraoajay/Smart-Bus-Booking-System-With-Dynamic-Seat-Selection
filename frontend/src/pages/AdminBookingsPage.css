@@ -76,7 +76,7 @@
 
 .abp-booking-table th,
 .abp-booking-table td {
-  padding: 0.65rem 0.35rem;
+  padding: 0.65rem 0.60rem;
   text-align: left;
   border-bottom: 1px solid #eef2f7;
   vertical-align: middle;
@@ -85,12 +85,12 @@
 
 .abp-booking-table th:first-child,
 .abp-booking-table td:first-child {
-  padding-left: 0.65rem;
+  padding-left: 0.75rem;
 }
 
 .abp-booking-table th:last-child,
 .abp-booking-table td:last-child {
-  padding-right: 0.65rem;
+  padding-right: 0.75rem;
 }
 
 .abp-booking-table th {
@@ -157,14 +157,12 @@
 .abp-booking-table td:nth-child(6) {
   width: 11%;
   white-space: nowrap;
-  padding-right: 0.75rem;
 }
 
 .abp-booking-table th:nth-child(7),
 .abp-booking-table td:nth-child(7) {
   width: 16%;
   white-space: nowrap;
-  padding-left: 0.75rem;
 }
 
 .abp-booking-table tbody tr:hover {

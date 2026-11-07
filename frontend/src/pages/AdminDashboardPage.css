@@ -540,19 +540,19 @@
 
 .adm-bookings-table th,
 .adm-bookings-table td {
-  padding: 0.65rem 0.35rem;
+  padding: 0.65rem 0.60rem;
   vertical-align: middle;
   box-sizing: border-box;
 }
 
 .adm-bookings-table th:first-child,
 .adm-bookings-table td:first-child {
-  padding-left: 0.65rem;
+  padding-left: 0.75rem;
 }
 
 .adm-bookings-table th:last-child,
 .adm-bookings-table td:last-child {
-  padding-right: 0.65rem;
+  padding-right: 0.75rem;
 }
 
 .adm-bookings-table th {
@@ -619,14 +619,12 @@
 .adm-bookings-table td:nth-child(6) {
   width: 11%;
   white-space: nowrap;
-  padding-right: 0.75rem;
 }
 
 .adm-bookings-table th:nth-child(7),
 .adm-bookings-table td:nth-child(7) {
   width: 16%;
   white-space: nowrap;
-  padding-left: 0.75rem;
 }
 
 .adm-bookings-table .adm-status {
