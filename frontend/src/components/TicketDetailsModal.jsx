@@ -10,6 +10,7 @@ const getBusLayoutLabel = (busType) => (busType === "Sleeper" ? "Sleeper" : "Sea
 const escapePdfText = (value) =>
   String(value ?? "")
     .replace(/→/g, "->")
+    .replace(/•/g, "-")
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
     .replace(/\)/g, "\\)")
@@ -58,61 +59,213 @@ const buildTicketPdfBlob = ({
   routeName,
   schedule,
   busLayoutType,
-  passengerSummary,
-  email,
-  phoneNumber,
-  boardingPoint,
-  boardingTime,
-  droppingPoint,
-  droppingTime,
-  selectedSeats,
-  normalizedStatus,
-  totalPrice,
-  amountPaid,
+  passengerDetails = [],
+  passengerSummary = "",
+  email = "-",
+  phoneNumber = "-",
+  boardingPoint = "-",
+  boardingTime = "",
+  droppingPoint = "-",
+  droppingTime = "",
+  selectedSeats = [],
+  normalizedStatus = "BOOKED",
+  totalPrice = 0,
+  amountPaid = 0,
+  refundAmount = 0,
+  cancellationCharge = 0,
+  cancelledBy = "",
 }) => {
-  const lines = [
-    { text: "BusGo Ticket", x: 48, y: 800, size: 24, font: "F2" },
-    { text: `Booking ID: ${bookingIdForFile}`, x: 48, y: 776, size: 11, font: "F1" },
-    { text: "Journey Details", x: 52, y: 732, size: 14, font: "F2" },
-    { text: `Route: ${routeName}`, x: 52, y: 708, size: 11, font: "F1" },
-    { text: `Bus Number: ${schedule?.busNumber || "-"}`, x: 52, y: 690, size: 11, font: "F1" },
-    { text: `A/C Type: ${schedule?.acType === "A/C" ? "A/C" : "Non-A/C"}`, x: 52, y: 672, size: 11, font: "F1" },
-    { text: `Bus Layout: ${busLayoutType}`, x: 52, y: 654, size: 11, font: "F1" },
-    { text: `Travel Date: ${schedule?.travelDate || "-"}`, x: 52, y: 636, size: 11, font: "F1" },
-    { text: `Departure: ${formatDisplayTime(schedule?.departureTime)}`, x: 310, y: 708, size: 11, font: "F1" },
-    { text: `Arrival: ${formatDisplayTime(schedule?.arrivalTime)}${schedule?.arrivalDay && Number(schedule.arrivalDay) > 1 ? ` (Day ${schedule.arrivalDay})` : ""}`, x: 310, y: 690, size: 11, font: "F1" },
-    { text: `Duration: ${schedule?.duration || "-"}`, x: 310, y: 672, size: 11, font: "F1" },
-    { text: "Passenger Details", x: 52, y: 590, size: 14, font: "F2" },
-    { text: `Passengers: ${passengerSummary}`, x: 52, y: 566, size: 11, font: "F1" },
-    { text: `Email: ${email}`, x: 52, y: 548, size: 11, font: "F1" },
-    { text: `Phone: ${phoneNumber}`, x: 52, y: 530, size: 11, font: "F1" },
-    { text: `Seats: ${selectedSeats.map((seat) => `Seat ${seat}`).join(", ")}`, x: 52, y: 512, size: 11, font: "F1" },
-    { text: `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : normalizedStatus === "COMPLETED" ? "Completed" : "Confirmed"}`, x: 310, y: 566, size: 11, font: "F1" },
-    { text: `Boarding: ${boardingPoint} (${formatDisplayTime(boardingTime)})`, x: 310, y: 548, size: 11, font: "F1" },
-    { text: `Dropping: ${droppingPoint} (${formatDisplayTime(droppingTime)})`, x: 310, y: 530, size: 11, font: "F1" },
-    { text: "Payment Summary", x: 52, y: 466, size: 14, font: "F2" },
-    { text: `Total Price: Rs. ${totalPrice.toLocaleString()}`, x: 52, y: 442, size: 11, font: "F1" },
-    { text: `Amount Paid: Rs. ${amountPaid.toLocaleString()}`, x: 310, y: 442, size: 11, font: "F1" },
-    { text: `Ticket sent to ${email} and ${phoneNumber}.`, x: 52, y: 396, size: 11, font: "F1" },
-    { text: "Thank you for booking with BusGo.", x: 52, y: 378, size: 11, font: "F1" },
-  ];
+  const isCancelled = normalizedStatus === "CANCELLED";
+  const statusLabel = isCancelled
+    ? "Cancelled"
+    : normalizedStatus === "COMPLETED"
+    ? "Completed"
+    : "Confirmed";
 
-  const contentCommands = [
+  const cancelledByLabel =
+    cancelledBy === "USER"
+      ? "User"
+      : cancelledBy === "ADMIN"
+      ? "Admin"
+      : cancelledBy || "-";
+
+  let passengerList = [];
+  if (Array.isArray(passengerDetails) && passengerDetails.length > 0) {
+    passengerList = passengerDetails.filter((p) => p && (p.name || p.seatNumber));
+  }
+  if (passengerList.length === 0 && passengerSummary && passengerSummary !== "-") {
+    const parts = passengerSummary.split(";").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      passengerList = parts.map((part) => ({ name: part, seatNumber: "", gender: "" }));
+    }
+  }
+
+  const lines = [];
+  const contentCommands = [];
+
+  const boxX = 40;
+  const boxW = 515;
+  const textXLeft = 52;
+  const textXRight = 310;
+
+  // 1. Header Box
+  const headerTop = 804;
+  const headerHeight = 54;
+  const headerBottom = headerTop - headerHeight;
+
+  contentCommands.push(
     "0.93 0.96 1 rg",
-    "40 760 515 58 re f",
-    "0.96 0.98 1 rg",
-    "40 620 515 122 re f",
-    "0.97 0.98 0.99 rg",
-    "40 496 515 106 re f",
-    "0.94 0.97 1 rg",
-    "40 420 515 58 re f",
-    "0 0 0 rg",
+    `${boxX} ${headerBottom} ${boxW} ${headerHeight} re f`,
     "0.88 0.91 0.95 RG",
     "1 w",
-    "40 620 515 122 re S",
-    "40 496 515 106 re S",
-    "40 420 515 58 re S",
-  ];
+    `${boxX} ${headerBottom} ${boxW} ${headerHeight} re S`
+  );
+
+  lines.push(
+    { text: "BusGo Ticket", x: 48, y: headerTop - 24, size: 22, font: "F2" },
+    { text: `Booking ID: ${bookingIdForFile}`, x: 48, y: headerTop - 42, size: 11, font: "F1" }
+  );
+
+  // 2. Journey Details Box
+  const journeyTop = headerBottom - 14;
+  let journeyY = journeyTop - 18;
+
+  lines.push({ text: "Journey Details", x: textXLeft, y: journeyY, size: 13, font: "F2" });
+
+  journeyY -= 18;
+  lines.push(
+    { text: `Route: ${routeName}`, x: textXLeft, y: journeyY, size: 11, font: "F1" },
+    { text: `Departure: ${formatDisplayTime(schedule?.departureTime)}`, x: textXRight, y: journeyY, size: 11, font: "F1" }
+  );
+
+  journeyY -= 18;
+  lines.push(
+    { text: `Bus Number: ${schedule?.busNumber || "-"}`, x: textXLeft, y: journeyY, size: 11, font: "F1" },
+    { text: `Arrival: ${formatDisplayTime(schedule?.arrivalTime)}${schedule?.arrivalDay && Number(schedule.arrivalDay) > 1 ? ` (Day ${schedule.arrivalDay})` : ""}`, x: textXRight, y: journeyY, size: 11, font: "F1" }
+  );
+
+  journeyY -= 18;
+  lines.push(
+    { text: `A/C Type: ${schedule?.acType === "A/C" ? "A/C" : "Non-A/C"}`, x: textXLeft, y: journeyY, size: 11, font: "F1" },
+    { text: `Duration: ${schedule?.duration || "-"}`, x: textXRight, y: journeyY, size: 11, font: "F1" }
+  );
+
+  journeyY -= 18;
+  lines.push(
+    { text: `Bus Layout: ${busLayoutType}`, x: textXLeft, y: journeyY, size: 11, font: "F1" }
+  );
+
+  journeyY -= 18;
+  lines.push(
+    { text: `Travel Date: ${schedule?.travelDate || "-"}`, x: textXLeft, y: journeyY, size: 11, font: "F1" }
+  );
+
+  const journeyBottom = journeyY - 12;
+  const journeyHeight = journeyTop - journeyBottom;
+
+  contentCommands.push(
+    "0.96 0.98 1 rg",
+    `${boxX} ${journeyBottom} ${boxW} ${journeyHeight} re f`,
+    "0.88 0.91 0.95 RG",
+    "1 w",
+    `${boxX} ${journeyBottom} ${boxW} ${journeyHeight} re S`
+  );
+
+  // 3. Passenger Details Box
+  const passengerTop = journeyBottom - 14;
+  let passengerY = passengerTop - 18;
+
+  lines.push({ text: "Passenger Details", x: textXLeft, y: passengerY, size: 13, font: "F2" });
+
+  passengerY -= 18;
+  lines.push(
+    { text: `Status: ${statusLabel}`, x: textXLeft, y: passengerY, size: 11, font: "F1" },
+    { text: `Selected Seats: ${selectedSeats.map((seat) => `Seat ${seat}`).join(", ") || "-"}`, x: textXRight, y: passengerY, size: 11, font: "F1" }
+  );
+
+  passengerY -= 18;
+  lines.push(
+    { text: `Phone: ${phoneNumber}`, x: textXLeft, y: passengerY, size: 11, font: "F1" },
+    { text: `Email: ${email}`, x: textXRight, y: passengerY, size: 11, font: "F1" }
+  );
+
+  passengerY -= 18;
+  lines.push(
+    { text: `Boarding: ${boardingPoint} (${formatDisplayTime(boardingTime)})`, x: textXLeft, y: passengerY, size: 11, font: "F1" },
+    { text: `Dropping: ${droppingPoint} (${formatDisplayTime(droppingTime)})`, x: textXRight, y: passengerY, size: 11, font: "F1" }
+  );
+
+  passengerY -= 18;
+  if (passengerList.length > 1) {
+    lines.push({ text: `Passengers (${passengerList.length}):`, x: textXLeft, y: passengerY, size: 11, font: "F2" });
+    passengerList.forEach((p, idx) => {
+      passengerY -= 18;
+      const seatInfo = p.seatNumber ? `Seat ${p.seatNumber}` : `Passenger ${idx + 1}`;
+      const genderInfo = p.gender ? ` (${p.gender})` : "";
+      lines.push({ text: `  - ${seatInfo}: ${p.name || "-"}${genderInfo}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+    });
+  } else if (passengerList.length === 1) {
+    const p = passengerList[0];
+    const seatInfo = p.seatNumber ? ` (Seat ${p.seatNumber}${p.gender ? `, ${p.gender}` : ""})` : (p.gender ? ` (${p.gender})` : "");
+    lines.push({ text: `Passenger: ${p.name || "-"}${seatInfo}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+  } else {
+    lines.push({ text: `Passenger: ${passengerSummary || "-"}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+  }
+
+  const passengerBottom = passengerY - 12;
+  const passengerHeight = passengerTop - passengerBottom;
+
+  contentCommands.push(
+    "0.97 0.98 0.99 rg",
+    `${boxX} ${passengerBottom} ${boxW} ${passengerHeight} re f`,
+    "0.88 0.91 0.95 RG",
+    "1 w",
+    `${boxX} ${passengerBottom} ${boxW} ${passengerHeight} re S`
+  );
+
+  // 4. Payment Summary Box
+  const paymentTop = passengerBottom - 14;
+  let paymentY = paymentTop - 18;
+
+  lines.push({ text: "Payment Summary", x: textXLeft, y: paymentY, size: 13, font: "F2" });
+
+  paymentY -= 18;
+  lines.push(
+    { text: `Total Price: Rs. ${totalPrice.toLocaleString()}`, x: textXLeft, y: paymentY, size: 11, font: "F1" },
+    { text: `Amount Paid: Rs. ${amountPaid.toLocaleString()}`, x: textXRight, y: paymentY, size: 11, font: "F1" }
+  );
+
+  if (isCancelled) {
+    paymentY -= 18;
+    lines.push(
+      { text: `Refund Amount: Rs. ${refundAmount.toLocaleString()}`, x: textXLeft, y: paymentY, size: 11, font: "F1" },
+      { text: `Cancellation Charge: Rs. ${cancellationCharge.toLocaleString()}`, x: textXRight, y: paymentY, size: 11, font: "F1" }
+    );
+
+    paymentY -= 18;
+    lines.push(
+      { text: `Cancelled By: ${cancelledByLabel}`, x: textXLeft, y: paymentY, size: 11, font: "F1" }
+    );
+  }
+
+  const paymentBottom = paymentY - 12;
+  const paymentHeight = paymentTop - paymentBottom;
+
+  contentCommands.push(
+    "0.94 0.97 1 rg",
+    `${boxX} ${paymentBottom} ${boxW} ${paymentHeight} re f`,
+    "0.88 0.91 0.95 RG",
+    "1 w",
+    `${boxX} ${paymentBottom} ${boxW} ${paymentHeight} re S`
+  );
+
+  // 5. Footer Notice
+  const footerY1 = paymentBottom - 18;
+  const footerY2 = footerY1 - 18;
+  lines.push(
+    { text: `Ticket sent to ${email} and ${phoneNumber}.`, x: textXLeft, y: footerY1, size: 11, font: "F1" },
+    { text: "Thank you for booking with BusGo.", x: textXLeft, y: footerY2, size: 11, font: "F1" }
+  );
 
   lines.forEach((line) => {
     contentCommands.push(
@@ -168,13 +321,16 @@ const buildTicketText = ({
   boardingTime,
   droppingPoint,
   droppingTime,
+  refundAmount,
+  cancellationCharge,
+  cancelledBy,
 }) => {
   const bookingIds = bookings.map((booking) => booking.bookingId).join(", ");
   const routeName = schedule?.route
     ? `${schedule.route.fromCity} → ${schedule.route.toCity}`
     : "-";
 
-  return [
+  const lines = [
     "BusGo Ticket",
     `Booking ID: ${bookingIds || "-"}`,
     `Route: ${routeName}`,
@@ -195,7 +351,15 @@ const buildTicketText = ({
     `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : normalizedStatus === "COMPLETED" ? "Completed" : "Confirmed"}`,
     `Total Price: Rs. ${totalPrice.toLocaleString()}`,
     `Amount Paid: Rs. ${amountPaid.toLocaleString()}`,
-  ].join("\n");
+  ];
+
+  if (normalizedStatus === "CANCELLED") {
+    lines.push(`Refund Amount: Rs. ${(refundAmount ?? 0).toLocaleString()}`);
+    lines.push(`Cancellation Charge: Rs. ${(cancellationCharge ?? 0).toLocaleString()}`);
+    lines.push(`Cancelled By: ${getCancelledByLabel(cancelledBy)}`);
+  }
+
+  return lines.join("\n");
 };
 
 const parseSelectedSeats = (booking) => {
@@ -323,6 +487,9 @@ export default function TicketDetailsModal({
     boardingTime,
     droppingPoint,
     droppingTime,
+    refundAmount,
+    cancellationCharge,
+    cancelledBy,
   });
 
   const handleDownloadTicket = () => {
@@ -332,6 +499,7 @@ export default function TicketDetailsModal({
         routeName,
         schedule,
         busLayoutType,
+        passengerDetails,
         passengerSummary,
         email,
         phoneNumber,
@@ -343,6 +511,9 @@ export default function TicketDetailsModal({
         normalizedStatus,
         totalPrice,
         amountPaid,
+        refundAmount,
+        cancellationCharge,
+        cancelledBy,
       });
       const downloadUrl = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
@@ -369,6 +540,7 @@ export default function TicketDetailsModal({
             routeName,
             schedule,
             busLayoutType,
+            passengerDetails,
             passengerSummary,
             email,
             phoneNumber,
@@ -380,6 +552,9 @@ export default function TicketDetailsModal({
             normalizedStatus,
             totalPrice,
             amountPaid,
+            refundAmount,
+            cancellationCharge,
+            cancelledBy,
           });
           const ticketFile = new File([pdfBlob], `BusGo-Ticket-${bookingIdForFile}.pdf`, {
             type: "application/pdf",
