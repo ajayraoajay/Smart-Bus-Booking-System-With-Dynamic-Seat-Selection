@@ -51,8 +51,9 @@ public class BookingController {
     @PutMapping("/{bookingId}/cancel")
     public BookingResponse cancelBooking(
             @PathVariable Long bookingId,
-            @RequestParam(name = "cancelledBy", defaultValue = "ADMIN") String cancelledBy
+            @RequestParam(name = "cancelledBy", defaultValue = "ADMIN") String cancelledBy,
+            @RequestParam(name = "seatNumber", required = false) Integer seatNumber
     ) {
-        return bookingService.cancelBooking(bookingId, cancelledBy);
+        return bookingService.cancelBooking(bookingId, cancelledBy, seatNumber);
     }
 }

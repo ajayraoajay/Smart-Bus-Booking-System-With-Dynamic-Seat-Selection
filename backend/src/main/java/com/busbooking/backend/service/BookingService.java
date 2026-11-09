@@ -123,6 +123,10 @@ public class BookingService {
     }
 
     public BookingResponse cancelBooking(Long bookingId, String cancelledBy) {
+        return cancelBooking(bookingId, cancelledBy, null);
+    }
+
+    public BookingResponse cancelBooking(Long bookingId, String cancelledBy, Integer seatNumber) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
 
@@ -131,19 +135,92 @@ public class BookingService {
         }
 
         String cancellationSource = normalizeCancellationSource(cancelledBy);
-        int refundAmount = calculateRefundAmount(booking.getTotalPrice(), cancellationSource);
-        int cancellationCharge = booking.getTotalPrice() - refundAmount;
+        List<PassengerDetail> details = booking.getPassengerDetails() != null
+                ? new ArrayList<>(booking.getPassengerDetails())
+                : new ArrayList<>();
 
-        booking.setStatus("CANCELLED");
-        booking.setRefundAmount(refundAmount);
-        booking.setCancellationCharge(cancellationCharge);
+        if (details.isEmpty()) {
+            details.add(new PassengerDetail(
+                    booking.getSeatNumber(),
+                    booking.getPassengerName(),
+                    "",
+                    "BOOKED",
+                    0,
+                    0,
+                    null
+            ));
+        }
+
+        int totalSeats = Math.max(1, details.size());
+        int perSeatPrice = booking.getTotalPrice() / totalSeats;
+
+        if (seatNumber != null && details.size() > 1) {
+            PassengerDetail targetPassenger = details.stream()
+                    .filter(p -> p != null && seatNumber.equals(p.getSeatNumber()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Seat " + seatNumber + " not found in booking."));
+
+            if ("CANCELLED".equalsIgnoreCase(targetPassenger.getStatus())) {
+                throw new RuntimeException("Seat " + seatNumber + " is already cancelled.");
+            }
+
+            int seatRefund = calculateRefundAmount(perSeatPrice, cancellationSource);
+            int seatCharge = perSeatPrice - seatRefund;
+
+            targetPassenger.setStatus("CANCELLED");
+            targetPassenger.setRefundAmount(seatRefund);
+            targetPassenger.setCancellationCharge(seatCharge);
+            targetPassenger.setCancelledBy(cancellationSource);
+        } else {
+            for (PassengerDetail detail : details) {
+                if (detail != null && !"CANCELLED".equalsIgnoreCase(detail.getStatus())) {
+                    int seatRefund = calculateRefundAmount(perSeatPrice, cancellationSource);
+                    int seatCharge = perSeatPrice - seatRefund;
+
+                    detail.setStatus("CANCELLED");
+                    detail.setRefundAmount(seatRefund);
+                    detail.setCancellationCharge(seatCharge);
+                    detail.setCancelledBy(cancellationSource);
+                }
+            }
+        }
+
+        int totalRefund = details.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(PassengerDetail::getRefundAmount)
+                .sum();
+        int totalCharge = details.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(PassengerDetail::getCancellationCharge)
+                .sum();
+
+        long activePassengers = details.stream()
+                .filter(p -> p != null && !"CANCELLED".equalsIgnoreCase(p.getStatus()))
+                .count();
+
+        booking.setPassengerDetails(details);
+        booking.setRefundAmount(totalRefund);
+        booking.setCancellationCharge(totalCharge);
         booking.setCancelledBy(cancellationSource);
+
+        if (activePassengers == 0) {
+            booking.setStatus("CANCELLED");
+        } else {
+            booking.setStatus("PARTIALLY CANCELLED");
+        }
 
         Booking updated = bookingRepository.save(booking);
 
-        String message = CANCELLED_BY_USER.equals(cancellationSource)
-                ? "Booking cancelled successfully. 30% cancellation charges apply and Rs. " + refundAmount + " will be refunded."
-                : "Booking cancelled by admin. Full refund of Rs. " + refundAmount + " will be processed.";
+        String message;
+        if (activePassengers == 0) {
+            message = CANCELLED_BY_USER.equals(cancellationSource)
+                    ? "Booking cancelled successfully. 30% cancellation charges apply and Rs. " + totalRefund + " will be refunded."
+                    : "Booking cancelled by admin. Full refund of Rs. " + totalRefund + " will be processed.";
+        } else {
+            message = CANCELLED_BY_USER.equals(cancellationSource)
+                    ? "Seat #" + (seatNumber != null ? seatNumber : "") + " ticket cancelled successfully. 30% cancellation charge applies."
+                    : "Seat #" + (seatNumber != null ? seatNumber : "") + " ticket cancelled by admin. Full refund will be processed.";
+        }
 
         return buildResponse(message, updated);
     }
@@ -151,6 +228,7 @@ public class BookingService {
     private BookingResponse buildResponse(String message, Booking booking) {
         return new BookingResponse(
                 message,
+                booking.getId(),
                 booking.getBookingId(),
                 booking.getPassengerName(),
                 booking.getPassengerDetails(),

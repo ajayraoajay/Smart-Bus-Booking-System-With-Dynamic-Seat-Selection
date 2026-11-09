@@ -73,8 +73,13 @@ const buildTicketPdfBlob = ({
   cancelledBy = "",
 }) => {
   const isCancelled = normalizedStatus === "CANCELLED";
+  const isPartiallyCancelled =
+    normalizedStatus === "PARTIALLY CANCELLED" ||
+    normalizedStatus === "PARTIALLY_CANCELLED";
   const statusLabel = isCancelled
     ? "Cancelled"
+    : isPartiallyCancelled
+    ? "Partially Cancelled"
     : normalizedStatus === "COMPLETED"
     ? "Completed"
     : "Confirmed";
@@ -199,14 +204,17 @@ const buildTicketPdfBlob = ({
       passengerY -= 18;
       const seatInfo = p.seatNumber ? `Seat ${p.seatNumber}` : `Passenger ${idx + 1}`;
       const genderInfo = p.gender ? ` (${p.gender})` : "";
-      lines.push({ text: `  - ${seatInfo}: ${p.name || "-"}${genderInfo}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+      const statusNote = (isCancelled || p.status === "CANCELLED") ? " [Cancelled]" : "";
+      lines.push({ text: `  - ${seatInfo}: ${p.name || "-"}${genderInfo}${statusNote}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
     });
   } else if (passengerList.length === 1) {
     const p = passengerList[0];
     const seatInfo = p.seatNumber ? ` (Seat ${p.seatNumber}${p.gender ? `, ${p.gender}` : ""})` : (p.gender ? ` (${p.gender})` : "");
-    lines.push({ text: `Passenger: ${p.name || "-"}${seatInfo}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+    const statusNote = (isCancelled || p.status === "CANCELLED") ? " [Cancelled]" : "";
+    lines.push({ text: `Passenger: ${p.name || "-"}${seatInfo}${statusNote}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
   } else {
-    lines.push({ text: `Passenger: ${passengerSummary || "-"}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+    const statusNote = isCancelled ? " [Cancelled]" : "";
+    lines.push({ text: `Passenger: ${passengerSummary || "-"}${statusNote}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
   }
 
   const passengerBottom = passengerY - 12;
@@ -232,17 +240,19 @@ const buildTicketPdfBlob = ({
     { text: `Amount Paid: Rs. ${amountPaid.toLocaleString()}`, x: textXRight, y: paymentY, size: 11, font: "F1" }
   );
 
-  if (isCancelled) {
+  if (isCancelled || isPartiallyCancelled || refundAmount > 0 || cancellationCharge > 0) {
     paymentY -= 18;
     lines.push(
       { text: `Refund Amount: Rs. ${refundAmount.toLocaleString()}`, x: textXLeft, y: paymentY, size: 11, font: "F1" },
       { text: `Cancellation Charge: Rs. ${cancellationCharge.toLocaleString()}`, x: textXRight, y: paymentY, size: 11, font: "F1" }
     );
 
-    paymentY -= 18;
-    lines.push(
-      { text: `Cancelled By: ${cancelledByLabel}`, x: textXLeft, y: paymentY, size: 11, font: "F1" }
-    );
+    if (cancelledByLabel && cancelledByLabel !== "-") {
+      paymentY -= 18;
+      lines.push(
+        { text: `Cancelled By: ${cancelledByLabel}`, x: textXLeft, y: paymentY, size: 11, font: "F1" }
+      );
+    }
   }
 
   const paymentBottom = paymentY - 12;

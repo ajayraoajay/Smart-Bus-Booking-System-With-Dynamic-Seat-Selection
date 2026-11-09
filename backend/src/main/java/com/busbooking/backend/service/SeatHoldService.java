@@ -7,6 +7,7 @@ import com.busbooking.backend.entity.Schedule;
 import com.busbooking.backend.entity.SeatHold;
 import com.busbooking.backend.exception.ResourceNotFoundException;
 import com.busbooking.backend.exception.SeatAlreadyBookedException;
+import com.busbooking.backend.model.PassengerDetail;
 import com.busbooking.backend.repository.BookingRepository;
 import com.busbooking.backend.repository.ScheduleRepository;
 import com.busbooking.backend.repository.SeatHoldRepository;
@@ -133,6 +134,12 @@ public class SeatHoldService {
         return bookings.stream()
                 .filter(this::isActiveBooking)
                 .flatMap(booking -> {
+                    if (booking.getPassengerDetails() != null && !booking.getPassengerDetails().isEmpty()) {
+                        return booking.getPassengerDetails().stream()
+                                .filter(p -> p != null && p.getSeatNumber() != null && !"CANCELLED".equalsIgnoreCase(p.getStatus()))
+                                .map(PassengerDetail::getSeatNumber);
+                    }
+
                     if (booking.getSeatNumbers() != null && !booking.getSeatNumbers().isBlank()) {
                         return java.util.Arrays.stream(booking.getSeatNumbers().split(","))
                                 .map(String::trim)

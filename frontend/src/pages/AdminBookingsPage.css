@@ -121,7 +121,7 @@
 .abp-booking-table th:nth-child(2),
 .abp-booking-table td:nth-child(2),
 .abp-booking-table td.abp-booking-email-cell {
-  width: 19%;
+  width: 18%;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -132,7 +132,7 @@
 .abp-booking-table th:nth-child(3),
 .abp-booking-table td:nth-child(3),
 .abp-booking-table td.abp-booking-phone-cell {
-  width: 12%;
+  width: 11%;
   white-space: nowrap;
 }
 
@@ -149,20 +149,22 @@
 
 .abp-booking-table th:nth-child(5),
 .abp-booking-table td:nth-child(5) {
-  width: 12%;
+  width: 11%;
   white-space: nowrap;
 }
 
 .abp-booking-table th:nth-child(6),
 .abp-booking-table td:nth-child(6) {
-  width: 11%;
+  width: 17%;
   white-space: nowrap;
+  padding-right: 0.85rem;
 }
 
 .abp-booking-table th:nth-child(7),
 .abp-booking-table td:nth-child(7) {
-  width: 16%;
+  width: 13%;
   white-space: nowrap;
+  padding-left: 0.85rem;
 }
 
 .abp-booking-table tbody tr:hover {
@@ -193,6 +195,11 @@
 .abp-status-cancelled {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.abp-status-partially-cancelled {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .abp-status-completed {

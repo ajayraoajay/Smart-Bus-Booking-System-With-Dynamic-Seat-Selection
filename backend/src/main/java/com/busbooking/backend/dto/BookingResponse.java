@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class BookingResponse {
     private String message;
+    private Long id;
     private String bookingId;
     private String passengerName;
     private List<PassengerDetail> passengerDetails;

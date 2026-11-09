@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ConfirmationModal from "../components/ConfirmationModal";
 import TicketDetailsModal from "../components/TicketDetailsModal";
+import { getBookingDisplayStatus } from "./AdminDashboardPage";
 import api from "../services/api";
 import "./UserDashboardPage.css";
 
@@ -102,11 +103,11 @@ export default function UserDashboardPage() {
     navigate("/");
   };
 
-  const confirmedCount = bookings.filter((booking) => booking.status === "BOOKED").length;
+  const confirmedCount = bookings.filter((booking) => booking.status === "BOOKED" || booking.status === "PARTIALLY CANCELLED").length;
   const cancelledCount = bookings.filter((booking) => booking.status === "CANCELLED").length;
   const totalPaid = bookings
-    .filter((booking) => booking.status === "BOOKED")
-    .reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    .filter((booking) => booking.status !== "CANCELLED")
+    .reduce((sum, booking) => sum + (booking.totalPrice || 0) - (booking.refundAmount || 0), 0);
 
   return (
     <div className={`udp-page ${darkMode ? "udp-dark" : ""}`}>
@@ -303,6 +304,13 @@ export default function UserDashboardPage() {
         ) : (
           <div className="udp-table-wrap">
             <table className="udp-table">
+              <colgroup>
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "24%" }} />
+                <col style={{ width: "18%" }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Starting Point</th>
@@ -320,38 +328,41 @@ export default function UserDashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  bookings.map((booking) => (
-                    <tr key={booking.id}>
-                      <td>{booking.schedule?.route?.fromCity ?? "-"}</td>
-                      <td>{booking.schedule?.route?.toCity ?? "-"}</td>
-                      <td>{booking.schedule?.travelDate ?? "-"}</td>
-                      <td>
-                        <span className={`udp-status udp-status-${booking.status?.toLowerCase()}`}>
-                          {booking.status === "BOOKED"
-                            ? "CONFIRMED"
-                            : booking.status === "CANCELLED"
-                              ? "CANCELLED"
-                              : booking.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="udp-action-btns">
-                          <button className="udp-btn-view" onClick={() => setTicketModalBooking(booking)}>
-                            View Ticket
-                          </button>
-                          {booking.status === "BOOKED" ? (
-                            <button className="udp-btn-cancel" onClick={() => openCancelModal(booking)}>
-                              Cancel Ticket
+                  bookings.map((booking) => {
+                    const displayStatus = getBookingDisplayStatus(booking);
+                    const statusClass =
+                      displayStatus === "CANCELLED"
+                        ? "udp-status-cancelled"
+                        : displayStatus === "PARTIALLY CANCELLED"
+                        ? "udp-status-partially-cancelled"
+                        : displayStatus === "COMPLETED"
+                        ? "udp-status-completed"
+                        : "udp-status-booked";
+
+                    return (
+                      <tr key={booking.id}>
+                        <td>{booking.schedule?.route?.fromCity ?? "-"}</td>
+                        <td>{booking.schedule?.route?.toCity ?? "-"}</td>
+                        <td>{booking.schedule?.travelDate ?? "-"}</td>
+                        <td>
+                          <span className={`udp-status ${statusClass}`}>
+                            {displayStatus}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="udp-action-btns">
+                            <button
+                              type="button"
+                              className="udp-btn-view"
+                              onClick={() => setTicketModalBooking(booking)}
+                            >
+                              View Ticket
                             </button>
-                          ) : (
-                            <span className="udp-action-note">
-                              {booking.cancelledBy === "ADMIN" ? "Refunded by admin" : "Refund processed"}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -376,6 +387,15 @@ export default function UserDashboardPage() {
       <TicketDetailsModal
         open={!!ticketModalBooking}
         booking={ticketModalBooking}
+        role="USER"
+        onBookingUpdated={(updated) => {
+          setBookings((prev) =>
+            prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b))
+          );
+          setTicketModalBooking((prev) =>
+            prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+          );
+        }}
         emailFallback={user?.email ?? "-"}
         onClose={() => setTicketModalBooking(null)}
       />

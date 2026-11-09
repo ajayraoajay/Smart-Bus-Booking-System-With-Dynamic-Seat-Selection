@@ -250,8 +250,11 @@ export const getBookingDisplayStatus = (booking, now = new Date()) => {
   if (booking?.status === "CANCELLED") {
     return "CANCELLED";
   }
+  if (booking?.status === "PARTIALLY CANCELLED" || booking?.status === "PARTIALLY_CANCELLED") {
+    return "PARTIALLY CANCELLED";
+  }
   if (isBookingDroppingPassed(booking, now)) {
-    return "Completed";
+    return "COMPLETED";
   }
   if (booking?.status === "BOOKED") {
     return "CONFIRMED";
@@ -260,8 +263,11 @@ export const getBookingDisplayStatus = (booking, now = new Date()) => {
 };
 
 export const getBookingStatusBadgeClass = (status) => {
-  if (status === "CANCELLED") return "adm-status-cancelled";
-  if (status === "Completed" || status === "COMPLETED") return "adm-status-completed";
+  if (!status) return "adm-status-booked";
+  const s = String(status).toUpperCase();
+  if (s === "CANCELLED") return "adm-status-cancelled";
+  if (s === "PARTIALLY CANCELLED" || s === "PARTIALLY_CANCELLED") return "adm-status-partially-cancelled";
+  if (s === "COMPLETED") return "adm-status-completed";
   return "adm-status-booked";
 };
 
@@ -1667,12 +1673,12 @@ export default function AdminDashboardPage() {
                   <table className="adm-table adm-bookings-table">
                     <colgroup>
                       <col style={{ width: "12%" }} />
-                      <col style={{ width: "19%" }} />
-                      <col style={{ width: "12%" }} />
                       <col style={{ width: "18%" }} />
-                      <col style={{ width: "12%" }} />
                       <col style={{ width: "11%" }} />
-                      <col style={{ width: "16%" }} />
+                      <col style={{ width: "18%" }} />
+                      <col style={{ width: "11%" }} />
+                      <col style={{ width: "17%" }} />
+                      <col style={{ width: "13%" }} />
                     </colgroup>
                     <thead>
                       <tr>
@@ -1688,7 +1694,6 @@ export default function AdminDashboardPage() {
                     <tbody>
                       {paginatedBookings.map((b) => {
                         const displayStatus = getBookingDisplayStatus(b);
-                        const canCancel = b.status !== "CANCELLED" && !isBookingBoardingPassed(b);
                         const userName = b.user?.name || b.userName || "—";
                         const userEmail = b.email || b.passengerEmail || b.user?.email || "—";
                         const phoneNumber = b.phoneNumber || b.passengerPhone || b.user?.phone || "—";
@@ -1718,15 +1723,6 @@ export default function AdminDashboardPage() {
                                 >
                                   View Ticket
                                 </button>
-                                {canCancel && (
-                                  <button
-                                    type="button"
-                                    className="adm-btn-cancel"
-                                    onClick={() => openCancelModal(b)}
-                                  >
-                                    Cancel
-                                  </button>
-                                )}
                               </div>
                             </td>
                           </tr>
@@ -2370,6 +2366,15 @@ export default function AdminDashboardPage() {
       <TicketDetailsModal
         open={!!ticketModalBooking}
         booking={ticketModalBooking}
+        role="ADMIN"
+        onBookingUpdated={(updated) => {
+          setBookings((prev) =>
+            prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b))
+          );
+          setTicketModalBooking((prev) =>
+            prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+          );
+        }}
         onClose={() => setTicketModalBooking(null)}
       />
 

@@ -324,6 +324,11 @@
 }
 
 
+.bsp-status-partially-cancelled {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 @media (max-width: 480px) {
   .bsp-card {
     padding: 1.75rem 1.25rem;

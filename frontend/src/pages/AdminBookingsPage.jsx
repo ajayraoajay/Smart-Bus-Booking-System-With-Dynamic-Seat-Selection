@@ -190,12 +190,12 @@ function AdminBookingsPage() {
               <table className="abp-booking-table">
                 <colgroup>
                   <col style={{ width: "12%" }} />
-                  <col style={{ width: "19%" }} />
-                  <col style={{ width: "12%" }} />
                   <col style={{ width: "18%" }} />
-                  <col style={{ width: "12%" }} />
                   <col style={{ width: "11%" }} />
-                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "13%" }} />
                 </colgroup>
                 <thead>
                   <tr>
@@ -211,9 +211,6 @@ function AdminBookingsPage() {
                 <tbody>
                   {paginatedBookings.map((booking) => {
                     const displayStatus = getBookingDisplayStatus(booking);
-                    const canCancel =
-                      booking.status !== "CANCELLED" &&
-                      !isBookingBoardingPassed(booking);
                     const userName =
                       booking.user?.name ||
                       booking.userName ||
@@ -242,6 +239,8 @@ function AdminBookingsPage() {
                             className={
                               displayStatus === "CANCELLED"
                                 ? "abp-status abp-status-cancelled"
+                                : displayStatus === "Partially Cancelled" || displayStatus === "PARTIALLY CANCELLED"
+                                ? "abp-status abp-status-partially-cancelled"
                                 : displayStatus === "Completed" || displayStatus === "COMPLETED"
                                 ? "abp-status abp-status-completed"
                                 : "abp-status abp-status-booked"
@@ -259,16 +258,6 @@ function AdminBookingsPage() {
                             >
                               View Ticket
                             </button>
-
-                            {canCancel && (
-                              <button
-                                type="button"
-                                className="abp-cancel-btn"
-                                onClick={() => openCancelModal(booking)}
-                              >
-                                Cancel
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -354,6 +343,15 @@ function AdminBookingsPage() {
         <TicketDetailsModal
           open={!!ticketModalBooking}
           booking={ticketModalBooking}
+          role="ADMIN"
+          onBookingUpdated={(updated) => {
+            setBookings((prev) =>
+              prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b))
+            );
+            setTicketModalBooking((prev) =>
+              prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+            );
+          }}
           onClose={() => setTicketModalBooking(null)}
         />
       </div>

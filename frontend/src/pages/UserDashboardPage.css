@@ -276,6 +276,7 @@
 
 .udp-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -296,6 +297,44 @@
   color: #374151;
   border-bottom: 1px solid #f3f4f6;
   white-space: nowrap;
+}
+
+.udp-table th:nth-child(1),
+.udp-table td:nth-child(1) {
+  width: 20%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.udp-table th:nth-child(2),
+.udp-table td:nth-child(2) {
+  width: 20%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.udp-table th:nth-child(3),
+.udp-table td:nth-child(3) {
+  width: 18%;
+  white-space: nowrap;
+}
+
+.udp-table th:nth-child(4),
+.udp-table td:nth-child(4) {
+  width: 24%;
+  white-space: nowrap;
+  padding-right: 0.85rem;
+}
+
+.udp-table th:nth-child(5),
+.udp-table td:nth-child(5) {
+  width: 18%;
+  white-space: nowrap;
+  padding-left: 0.85rem;
 }
 
 .udp-table tbody tr:last-child td { border-bottom: none; }
@@ -339,6 +378,8 @@
 .udp-status-booked    { background: #dcfce7; color: #16a34a; }
 .udp-status-reserved  { background: #fef9c3; color: #ca8a04; }
 .udp-status-cancelled { background: #fee2e2; color: #dc2626; }
+.udp-status-partially-cancelled { background: #fef3c7; color: #b45309; }
+.udp-status-completed { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 
 .udp-action-btns {
   display: flex;
@@ -531,6 +572,11 @@
 .udp-dark .udp-seat {
   background: #273549;
   color: #e2e8f0;
+}
+
+.udp-dark .udp-status-partially-cancelled {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
 }
 
 .udp-dark .udp-btn-cancel {

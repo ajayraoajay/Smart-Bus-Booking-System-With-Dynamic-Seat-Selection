@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
-import { getBookingDisplayStatus } from "../pages/AdminDashboardPage";
+import { useEffect, useMemo, useState } from "react";
+import { getBookingDisplayStatus, isBookingBoardingPassed } from "../pages/AdminDashboardPage";
+import api from "../services/api";
+import ConfirmationModal from "./ConfirmationModal";
 import "../pages/BookingSuccessPage.css";
 import "./TicketDetailsModal.css";
 
@@ -16,13 +18,17 @@ const escapePdfText = (value) =>
     .replace(/\)/g, "\\)")
     .replace(/[^\x20-\x7E]/g, "?");
 
-const normalizePassengerDetails = (rawPassengerDetails, selectedSeats, fallbackPassengerName) => {
+const normalizePassengerDetails = (rawPassengerDetails, selectedSeats, fallbackPassengerName, bookingStatus) => {
   if (Array.isArray(rawPassengerDetails) && rawPassengerDetails.length > 0) {
     return rawPassengerDetails
       .map((detail, index) => ({
         seatNumber: detail?.seatNumber ?? selectedSeats[index] ?? "",
         name: detail?.name ?? "",
         gender: detail?.gender ?? "",
+        status: detail?.status || (bookingStatus === "CANCELLED" ? "CANCELLED" : "BOOKED"),
+        refundAmount: detail?.refundAmount ?? 0,
+        cancellationCharge: detail?.cancellationCharge ?? 0,
+        cancelledBy: detail?.cancelledBy ?? null,
       }))
       .filter((detail) => detail.name || detail.seatNumber || detail.gender);
   }
@@ -32,6 +38,10 @@ const normalizePassengerDetails = (rawPassengerDetails, selectedSeats, fallbackP
       seatNumber: selectedSeats[0] ?? "",
       name: fallbackPassengerName,
       gender: "",
+      status: bookingStatus === "CANCELLED" ? "CANCELLED" : "BOOKED",
+      refundAmount: 0,
+      cancellationCharge: 0,
+      cancelledBy: null,
     }];
   }
 
@@ -47,7 +57,8 @@ const buildPassengerSummary = (passengerDetails, fallbackPassengerName = "-") =>
     .map((detail) => {
       const seatLabel = detail.seatNumber ? `Seat ${detail.seatNumber}` : "Passenger";
       const genderLabel = detail.gender ? ` (${detail.gender})` : "";
-      return `${seatLabel}: ${detail.name}${genderLabel}`;
+      const statusLabel = detail.status === "CANCELLED" ? " [Cancelled]" : "";
+      return `${seatLabel}: ${detail.name}${genderLabel}${statusLabel}`;
     })
     .join("; ");
 };
@@ -76,8 +87,13 @@ const buildTicketPdfBlob = ({
   cancelledBy = "",
 }) => {
   const isCancelled = normalizedStatus === "CANCELLED";
+  const isPartiallyCancelled =
+    normalizedStatus === "PARTIALLY CANCELLED" ||
+    normalizedStatus === "PARTIALLY_CANCELLED";
   const statusLabel = isCancelled
     ? "Cancelled"
+    : isPartiallyCancelled
+    ? "Partially Cancelled"
     : normalizedStatus === "COMPLETED"
     ? "Completed"
     : "Confirmed";
@@ -202,14 +218,17 @@ const buildTicketPdfBlob = ({
       passengerY -= 18;
       const seatInfo = p.seatNumber ? `Seat ${p.seatNumber}` : `Passenger ${idx + 1}`;
       const genderInfo = p.gender ? ` (${p.gender})` : "";
-      lines.push({ text: `  - ${seatInfo}: ${p.name || "-"}${genderInfo}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+      const statusNote = (isCancelled || p.status === "CANCELLED") ? " [Cancelled]" : "";
+      lines.push({ text: `  - ${seatInfo}: ${p.name || "-"}${genderInfo}${statusNote}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
     });
   } else if (passengerList.length === 1) {
     const p = passengerList[0];
     const seatInfo = p.seatNumber ? ` (Seat ${p.seatNumber}${p.gender ? `, ${p.gender}` : ""})` : (p.gender ? ` (${p.gender})` : "");
-    lines.push({ text: `Passenger: ${p.name || "-"}${seatInfo}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+    const statusNote = (isCancelled || p.status === "CANCELLED") ? " [Cancelled]" : "";
+    lines.push({ text: `Passenger: ${p.name || "-"}${seatInfo}${statusNote}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
   } else {
-    lines.push({ text: `Passenger: ${passengerSummary || "-"}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
+    const statusNote = isCancelled ? " [Cancelled]" : "";
+    lines.push({ text: `Passenger: ${passengerSummary || "-"}${statusNote}`, x: textXLeft, y: passengerY, size: 11, font: "F1" });
   }
 
   const passengerBottom = passengerY - 12;
@@ -235,17 +254,19 @@ const buildTicketPdfBlob = ({
     { text: `Amount Paid: Rs. ${amountPaid.toLocaleString()}`, x: textXRight, y: paymentY, size: 11, font: "F1" }
   );
 
-  if (isCancelled) {
+  if (isCancelled || isPartiallyCancelled || refundAmount > 0 || cancellationCharge > 0) {
     paymentY -= 18;
     lines.push(
       { text: `Refund Amount: Rs. ${refundAmount.toLocaleString()}`, x: textXLeft, y: paymentY, size: 11, font: "F1" },
       { text: `Cancellation Charge: Rs. ${cancellationCharge.toLocaleString()}`, x: textXRight, y: paymentY, size: 11, font: "F1" }
     );
 
-    paymentY -= 18;
-    lines.push(
-      { text: `Cancelled By: ${cancelledByLabel}`, x: textXLeft, y: paymentY, size: 11, font: "F1" }
-    );
+    if (cancelledByLabel && cancelledByLabel !== "-") {
+      paymentY -= 18;
+      lines.push(
+        { text: `Cancelled By: ${cancelledByLabel}`, x: textXLeft, y: paymentY, size: 11, font: "F1" }
+      );
+    }
   }
 
   const paymentBottom = paymentY - 12;
@@ -348,12 +369,20 @@ const buildTicketText = ({
     `Dropping Point: ${droppingPoint} (${formatDisplayTime(droppingTime)})`,
     `Selected Seats: ${selectedSeats.map((seat) => `Seat ${seat}`).join(", ")}`,
     `Seat Count: ${selectedSeats.length}`,
-    `Status: ${normalizedStatus === "CANCELLED" ? "Cancelled" : normalizedStatus === "COMPLETED" ? "Completed" : "Confirmed"}`,
+    `Status: ${
+      normalizedStatus === "CANCELLED"
+        ? "Cancelled"
+        : normalizedStatus === "PARTIALLY CANCELLED"
+        ? "Partially Cancelled"
+        : normalizedStatus === "COMPLETED"
+        ? "Completed"
+        : "Confirmed"
+    }`,
     `Total Price: Rs. ${totalPrice.toLocaleString()}`,
     `Amount Paid: Rs. ${amountPaid.toLocaleString()}`,
   ];
 
-  if (normalizedStatus === "CANCELLED") {
+  if (normalizedStatus === "CANCELLED" || normalizedStatus === "PARTIALLY CANCELLED" || refundAmount > 0 || cancellationCharge > 0) {
     lines.push(`Refund Amount: Rs. ${(refundAmount ?? 0).toLocaleString()}`);
     lines.push(`Cancellation Charge: Rs. ${(cancellationCharge ?? 0).toLocaleString()}`);
     lines.push(`Cancelled By: ${getCancelledByLabel(cancelledBy)}`);
@@ -393,58 +422,123 @@ export default function TicketDetailsModal({
   open,
   booking,
   onClose,
+  onBookingUpdated,
+  role = "ADMIN",
   emailFallback = "-",
 }) {
+  const [currentBooking, setCurrentBooking] = useState(booking);
+  const [cancelPassengerTarget, setCancelPassengerTarget] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
 
+  useEffect(() => {
+    setCurrentBooking(booking);
+    setCancelPassengerTarget(null);
+    setActionMessage("");
+  }, [booking]);
+
+  const canCancel = useMemo(() => {
+    if (!currentBooking) return false;
+    if (currentBooking.status === "CANCELLED") return false;
+    if (isBookingBoardingPassed(currentBooking)) return false;
+    const dispStatus = getBookingDisplayStatus(currentBooking);
+    if (dispStatus === "Completed" || dispStatus === "COMPLETED") return false;
+    return true;
+  }, [currentBooking]);
+
   const ticketData = useMemo(() => {
-    if (!booking) {
+    if (!currentBooking) {
       return null;
     }
 
-    const selectedSeats = parseSelectedSeats(booking);
-    const schedule = booking.schedule ?? null;
+    const selectedSeats = parseSelectedSeats(currentBooking);
+    const schedule = currentBooking.schedule ?? null;
     const routeName = schedule?.route
       ? `${schedule.route.fromCity} → ${schedule.route.toCity}`
       : "-";
-    const displayStatus = getBookingDisplayStatus(booking);
-    const normalizedStatus =
-      displayStatus === "CANCELLED"
-        ? "CANCELLED"
-        : displayStatus === "Completed" || displayStatus === "COMPLETED"
-        ? "COMPLETED"
-        : "BOOKED";
-    const email = booking.email || booking.passengerEmail || "-";
+    const displayStatus = getBookingDisplayStatus(currentBooking);
+    const isCancelled =
+      currentBooking.status === "CANCELLED" || displayStatus === "CANCELLED";
+    const isPartiallyCancelled =
+      currentBooking.status === "PARTIALLY CANCELLED" ||
+      currentBooking.status === "PARTIALLY_CANCELLED" ||
+      displayStatus === "Partially Cancelled" ||
+      displayStatus === "PARTIALLY CANCELLED";
+
+    const normalizedStatus = isCancelled
+      ? "CANCELLED"
+      : isPartiallyCancelled
+      ? "PARTIALLY CANCELLED"
+      : displayStatus === "Completed" || displayStatus === "COMPLETED"
+      ? "COMPLETED"
+      : "BOOKED";
+
+    const email = currentBooking.email || currentBooking.passengerEmail || "-";
     const passengerDetails = normalizePassengerDetails(
-      booking.passengerDetails,
+      currentBooking.passengerDetails,
       selectedSeats,
-      booking.passengerName ?? "-"
+      currentBooking.passengerName ?? "-",
+      normalizedStatus
     );
-    const passengerSummary = buildPassengerSummary(passengerDetails, booking.passengerName ?? "-");
+    const passengerSummary = buildPassengerSummary(passengerDetails, currentBooking.passengerName ?? "-");
 
     return {
-      bookings: [booking],
-      bookingIdForFile: booking.bookingId ?? "ticket",
+      bookings: [currentBooking],
+      bookingIdForFile: currentBooking.bookingId ?? "ticket",
       selectedSeats,
-      totalPrice: booking.totalPrice ?? 0,
-      amountPaid: booking.totalPrice ?? 0,
+      totalPrice: currentBooking.totalPrice ?? 0,
+      amountPaid: currentBooking.totalPrice ?? 0,
       passengerDetails,
       passengerSummary,
       email,
-      phoneNumber: booking.phoneNumber || booking.passengerPhone || "-",
+      phoneNumber: currentBooking.phoneNumber || currentBooking.passengerPhone || "-",
       schedule,
       routeName,
       busLayoutType: getBusLayoutLabel(schedule?.busType),
       normalizedStatus,
-      boardingPoint: booking.boardingPoint ?? "-",
-      boardingTime: booking.boardingTime ?? "-",
-      droppingPoint: booking.droppingPoint ?? "-",
-      droppingTime: booking.droppingTime ?? "-",
-      refundAmount: booking.refundAmount ?? 0,
-      cancellationCharge: booking.cancellationCharge ?? 0,
-      cancelledBy: booking.cancelledBy ?? "",
+      boardingPoint: currentBooking.boardingPoint ?? "-",
+      boardingTime: currentBooking.boardingTime ?? "-",
+      droppingPoint: currentBooking.droppingPoint ?? "-",
+      droppingTime: currentBooking.droppingTime ?? "-",
+      refundAmount: currentBooking.refundAmount ?? 0,
+      cancellationCharge: currentBooking.cancellationCharge ?? 0,
+      cancelledBy: currentBooking.cancelledBy ?? "",
     };
-  }, [booking, emailFallback]);
+  }, [currentBooking]);
+
+  const handleConfirmCancelPassenger = async () => {
+    if (!cancelPassengerTarget || !currentBooking) return;
+    try {
+      setCancelLoading(true);
+      const isSinglePassenger = (ticketData?.passengerDetails?.length || 0) <= 1;
+      const seatNum = isSinglePassenger ? null : (cancelPassengerTarget.seatNumber ? Number(cancelPassengerTarget.seatNumber) : null);
+      const params = new URLSearchParams();
+      params.append("cancelledBy", role);
+      if (seatNum != null) {
+        params.append("seatNumber", seatNum);
+      }
+      const response = await api.put(`/bookings/${currentBooking.id}/cancel?${params.toString()}`);
+      const updated = response.data;
+      const mergedBooking = {
+        ...currentBooking,
+        status: updated.status || currentBooking.status,
+        refundAmount: updated.refundAmount ?? currentBooking.refundAmount,
+        cancellationCharge: updated.cancellationCharge ?? currentBooking.cancellationCharge,
+        cancelledBy: updated.cancelledBy || currentBooking.cancelledBy,
+        passengerDetails: updated.passengerDetails || currentBooking.passengerDetails,
+      };
+      setCurrentBooking(mergedBooking);
+      if (onBookingUpdated) {
+        onBookingUpdated(mergedBooking);
+      }
+      setCancelPassengerTarget(null);
+    } catch (err) {
+      console.error("Failed to cancel ticket:", err);
+      alert(err.response?.data?.message || err.message || "Failed to cancel ticket.");
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   if (!open || !ticketData) {
     return null;
@@ -711,15 +805,33 @@ export default function TicketDetailsModal({
           </div>
           {passengerDetails.length > 0 && (
             <div className="bsp-passenger-list">
-              {passengerDetails.map((detail, index) => (
-                <div className="bsp-passenger-card" key={`${detail.seatNumber}-${index}`}>
-                  <div className="bsp-passenger-card-top">
-                    <span className="bsp-passenger-seat">Seat {detail.seatNumber || "-"}</span>
-                    <span className="bsp-passenger-gender">{detail.gender || "Gender not specified"}</span>
+              {passengerDetails.map((detail, index) => {
+                const isPassengerCancelled =
+                  detail.status === "CANCELLED" || normalizedStatus === "CANCELLED";
+
+                return (
+                  <div className="bsp-passenger-card" key={`${detail.seatNumber}-${index}`}>
+                    <div className="bsp-passenger-card-top">
+                      <span className="bsp-passenger-seat">Seat {detail.seatNumber || "-"}</span>
+                      <span className="bsp-passenger-gender">{detail.gender || "Gender not specified"}</span>
+                    </div>
+                    <div className="bsp-passenger-card-bottom">
+                      <div className="bsp-passenger-name">{detail.name || "-"}</div>
+                      {isPassengerCancelled ? (
+                        <span className="tdm-passenger-cancelled-badge">Cancelled</span>
+                      ) : canCancel ? (
+                        <button
+                          type="button"
+                          className="tdm-passenger-cancel-btn"
+                          onClick={() => setCancelPassengerTarget(detail)}
+                        >
+                          Cancel Ticket
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="bsp-passenger-name">{detail.name || "-"}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <div className="bsp-detail-row">
@@ -740,9 +852,11 @@ export default function TicketDetailsModal({
           </div>
           <div className="bsp-detail-row">
             <span>Status</span>
-            <span className={`bsp-status bsp-status-${normalizedStatus.toLowerCase()}`}>
+            <span className={`bsp-status bsp-status-${normalizedStatus.toLowerCase().replace(/\s+/g, '-')}`}>
               {normalizedStatus === "CANCELLED"
                 ? "Cancelled"
+                : normalizedStatus === "PARTIALLY CANCELLED"
+                ? "Partially Cancelled"
                 : normalizedStatus === "COMPLETED"
                 ? "Completed"
                 : "Confirmed"}
@@ -760,7 +874,7 @@ export default function TicketDetailsModal({
             <span>Amount Paid</span>
             <span className="bsp-price-advance tdm-price-paid">Rs. {amountPaid.toLocaleString()}</span>
           </div>
-          {normalizedStatus === "CANCELLED" && (
+          {(normalizedStatus === "CANCELLED" || normalizedStatus === "PARTIALLY CANCELLED" || refundAmount > 0 || cancellationCharge > 0) && (
             <>
               <div className="bsp-detail-row">
                 <span>Refund Amount</span>
@@ -798,6 +912,32 @@ export default function TicketDetailsModal({
           </button>
         </div>
       </div>
+
+      <ConfirmationModal
+        open={!!cancelPassengerTarget}
+        icon="X"
+        title="Confirm Cancellation"
+        message={
+          ticketData && (ticketData.passengerDetails?.length || 0) <= 1
+            ? "Are you sure you want to cancel this booking?"
+            : `Are you sure you want to cancel ticket for ${cancelPassengerTarget?.name || `Seat ${cancelPassengerTarget?.seatNumber}`} (Seat ${cancelPassengerTarget?.seatNumber})?`
+        }
+        note={
+          role === "USER"
+            ? ticketData && (ticketData.passengerDetails?.length || 0) <= 1
+              ? "30% cancellation charges apply. Only 70% of the amount will be refunded."
+              : "30% cancellation charges apply. Only 70% of the seat amount will be refunded."
+            : ticketData && (ticketData.passengerDetails?.length || 0) <= 1
+              ? "This cancellation is being done by admin, so 100% of the amount will be refunded."
+              : "This cancellation is being done by admin, so 100% of the seat amount will be refunded."
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Yes, Cancel"
+        confirmVariant="danger"
+        loading={cancelLoading}
+        onCancel={() => !cancelLoading && setCancelPassengerTarget(null)}
+        onConfirm={handleConfirmCancelPassenger}
+      />
     </div>
   );
 }
